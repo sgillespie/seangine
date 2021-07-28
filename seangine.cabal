@@ -1,0 +1,52 @@
+cabal-version:      2.4
+name:               seangine
+version:            0.1.0.0
+synopsis:           Vulkan renderer by and for Sean Gillespie
+description:        Vulkan renderer by and for Sean Gillespie
+author:             Sean D Gillespie
+maintainer:         sean@mistersg.net
+copyright:          2021
+category:           Graphics
+executable seangine
+    main-is:            Main.hs
+    hs-source-dirs:     app
+    default-language:   Haskell2010
+    build-depends:
+      base < 5,
+      bytestring,
+      derive-storable-plugin,
+      derive-storable,
+      GLFW-b,
+      extra,
+      linear,
+      resourcet,
+      transformers,
+      unliftio-core,
+      vector,
+      vulkan,
+      vulkan-utils,
+      VulkanMemoryAllocator
+    default-extensions:
+      DataKinds,
+      DerivingStrategies,
+      DuplicateRecordFields,
+      GeneralizedNewtypeDeriving,
+      NumDecimals,
+      OverloadedStrings,
+      OverloadedLists,
+      RecordWildCards
+    other-modules:
+      Seangine.Domain,
+      Seangine.Domain.Frame,
+      Seangine.Domain.UniformBufferObject,
+      Seangine.Domain.Vertex,
+      Seangine.Monad
+      Seangine.Monad.Cmd,
+      Seangine.Monad.VulkanFrame,
+      Seangine.Monad.Vulkan,
+      Seangine.GraphicsPipeline,
+      Seangine.Init,
+      Seangine.Render,
+      Seangine.Shaders,
+      Seangine.Utils,
+      Seangine.Window
