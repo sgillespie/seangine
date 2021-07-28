@@ -37,6 +37,9 @@ Run the project
     
 This will run Seangine and output basic stats:
 
+![Peek 2021-07-27 22-36](https://user-images.githubusercontent.com/139144/127254717-8c5eb04c-6003-4ca9-9807-9e39e7a457e9.gif)
+
+
     Using device: "AMD RADV POLARIS10 (ACO)" (PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
     Processed: 52437 Frames
     Ran for: 6.520799395999347 Secs
