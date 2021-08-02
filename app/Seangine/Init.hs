@@ -167,10 +167,12 @@ withDevice' physicalDevice queueIndices = do
             = [ KHR_SWAPCHAIN_EXTENSION_NAME,
                 KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME
               ],
-          enabledFeatures = Nothing
+          enabledFeatures = Just features
         }
 
       createQueueInfo idx = DeviceQueueCreateInfo () zero idx [1]
+
+      features = zero { samplerAnisotropy = True }
 
   (_, device) <- withDevice physicalDevice deviceCreateInfo Nothing allocate
   return device

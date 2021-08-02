@@ -43,6 +43,7 @@ mkDerivation {
     derive-storable
     GLFW-b
     extra
+    JuicyPixels
     linear
     managed
     resourcet

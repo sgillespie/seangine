@@ -10,21 +10,24 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Reader
 import Data.Bits
 import Data.Traversable
+import Data.Word
 import Foreign.C.Types
 import Foreign.Marshal.Array
 import Foreign.Ptr
-import Foreign.Storable.Generic
+import Foreign.Storable
 import GHC.Clock (getMonotonicTime)
 import qualified Data.Vector as V
+import qualified Data.Vector.Storable as S
 
 import Control.Monad.Trans.Resource
 import Linear hiding (zero)
 import Vulkan.CStruct.Extends
-import Vulkan.Core10 hiding (alignment, withBuffer, withMappedMemory)
+import Vulkan.Core10 hiding (alignment, withImage, withMappedMemory)
 import Vulkan.Extensions.VK_KHR_swapchain
 import Vulkan.Extensions.VK_KHR_surface
 import Vulkan.Zero
-import VulkanMemoryAllocator
+import VulkanMemoryAllocator hiding (getPhysicalDeviceProperties)
+import qualified Codec.Picture as P
 
 import Seangine.Domain
 import Seangine.Monad
@@ -33,10 +36,10 @@ import Seangine.Utils
 
 vertices :: [Vertex]
 vertices
-  = [ Vertex (V2 (-0.5) (-0.5)) (V3 1 0 0),
-      Vertex (V2   0.5  (-0.5)) (V3 0 1 0),
-      Vertex (V2   0.5    0.5)  (V3 0 0 1),
-      Vertex (V2 (-0.5)   0.5)  (V3 1 1 1)
+  = [ Vertex (V2 (-0.5) (-0.5)) (V3 1 0 0) (V2 1 0),
+      Vertex (V2   0.5  (-0.5)) (V3 0 1 0) (V2 0 0),
+      Vertex (V2   0.5    0.5)  (V3 0 0 1) (V2 0 1),
+      Vertex (V2 (-0.5)   0.5)  (V3 1 1 1) (V2 1 1)
     ]
 
 vertexIndices :: [CUShort]
@@ -50,7 +53,8 @@ withVulkanFrame surface = do
   
   (swapchain, extent) <- withSwapchain handles surface
   renderPass <- withRenderPass' device
-  pipelineLayout <- withPipelineLayout' device
+  setLayout <- withDescriptorSetLayout' device
+  pipelineLayout <- withPipelineLayout' device setLayout
   pipeline <- withGraphicsPipeline pipelineLayout renderPass extent
   imageViews <- withImageViews device swapchain
   framebuffers <- withFramebuffers device imageViews renderPass extent
@@ -61,7 +65,18 @@ withVulkanFrame surface = do
   vertexBuffer <- withVertexBuffer allocator
   indexBuffer <- withIndexBuffer allocator
   uniformBuffers <- withUniformBuffers imageViews allocator
-  descriptorSets <- withDescriptorSets' imageViews (V.map fst uniformBuffers)
+
+  textureImage <- withTextureImage
+  textureImageView <- withTextureImageView textureImage
+  textureSampler <- withTextureSampler
+
+  descriptorSets
+    <- withDescriptorSets'
+         imageViews
+         (V.map fst uniformBuffers)
+         textureImageView
+         textureSampler
+         setLayout
   
   return Frame
     { fIndex = 0,
@@ -236,10 +251,7 @@ withGraphicsPipeline pipelineLayout renderPass extent@(Extent2D width height) = 
         { next = (),
           flags = zero,
           vertexBindingDescriptions = [vertexBinding],
-          vertexAttributeDescriptions =
-            [ attributeDescriptionPos,
-              attributeDescriptionColor
-            ]
+          vertexAttributeDescriptions = V.fromList vertexAttributes
         }
 
       vertexAssemblyInfo = PipelineInputAssemblyStateCreateInfo
@@ -298,20 +310,6 @@ withGraphicsPipeline pipelineLayout renderPass extent@(Extent2D width height) = 
           inputRate = VERTEX_INPUT_RATE_VERTEX
         }
 
-      attributeDescriptionPos = VertexInputAttributeDescription
-        { location = 0,
-          binding = 0,
-          format = FORMAT_R32G32_SFLOAT,
-          offset = 0
-        }
-
-      attributeDescriptionColor = VertexInputAttributeDescription
-        { location = 1,
-          binding = 0,
-          format = FORMAT_R32G32B32_SFLOAT,
-          offset = fromIntegral $ sizeOf (position zero)
-        }
-
       viewport = Viewport
         { x = 0,
           y = 0,
@@ -346,34 +344,9 @@ withGraphicsPipeline pipelineLayout renderPass extent@(Extent2D width height) = 
 
 withImageViews :: MonadResource m => Device -> SwapchainKHR -> m (V.Vector ImageView)
 withImageViews device swapchain = do
-  let components = ComponentMapping
-        { r = COMPONENT_SWIZZLE_IDENTITY,
-          g = COMPONENT_SWIZZLE_IDENTITY,
-          b = COMPONENT_SWIZZLE_IDENTITY,
-          a = COMPONENT_SWIZZLE_IDENTITY
-        }
-
-      subresourceRange = ImageSubresourceRange
-        { aspectMask = IMAGE_ASPECT_COLOR_BIT,
-          baseMipLevel = 0,
-          levelCount = 1,
-          baseArrayLayer = 0,
-          layerCount = 1
-       }
-
-      imageViewCreateInfo img = ImageViewCreateInfo
-        { next = (),
-          flags = zero,
-          image = img,
-          viewType = IMAGE_VIEW_TYPE_2D,
-          format = FORMAT_B8G8R8A8_SRGB,
-          components = components,
-          subresourceRange = subresourceRange
-        }
-        
   (_, images) <- getSwapchainImagesKHR device swapchain
   for images $ \image ->
-    snd <$> withImageView device (imageViewCreateInfo image) Nothing allocate
+    withImageView' device image FORMAT_B8G8R8A8_SRGB
 
 withFramebuffers
  :: MonadResource m
@@ -404,130 +377,163 @@ withFence' device = snd <$> withFence device zero Nothing allocate
 
 withVertexBuffer :: Allocator -> Vulkan Buffer
 withVertexBuffer allocator = do
-  let bufferSize = sizeOf (head vertices) * length vertices
+  let bufferSize = fromIntegral $ sizeOf (head vertices) * length vertices
+      stageFlags = MEMORY_PROPERTY_HOST_VISIBLE_BIT .|. MEMORY_PROPERTY_HOST_COHERENT_BIT
+      stageUsage = BUFFER_USAGE_TRANSFER_SRC_BIT
+      vertUsage = BUFFER_USAGE_TRANSFER_DST_BIT .|. BUFFER_USAGE_VERTEX_BUFFER_BIT
+      vertFlags = MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 
-  let stagingBufferInfo = BufferCreateInfo
-        { next = (),
-          flags = zero,
-          size = fromIntegral bufferSize,
-          usage = BUFFER_USAGE_TRANSFER_SRC_BIT,
-          sharingMode = SHARING_MODE_EXCLUSIVE,
-          queueFamilyIndices = [] -- Ignored
-        }
-      stagingAllocInfo = zero
-        { requiredFlags
-            = MEMORY_PROPERTY_HOST_VISIBLE_BIT
-            .|. MEMORY_PROPERTY_HOST_COHERENT_BIT
-        }
+  -- Create a staging buffer
+  (stagingBuffer, _, stagingAlloc) <- withBuffer' bufferSize stageUsage stageFlags allocator
 
-  (_, staging) <- withBuffer allocator stagingBufferInfo stagingAllocInfo allocate
-  let (stagingBuffer, stagingAlloc, _) = staging
-
+  -- Upload the vertices
   (unmapStaging, data') <- withMappedMemory allocator stagingAlloc allocate
   liftIO $ pokeArray (castPtr data') vertices
   release unmapStaging
-  
-  let bufferInfo = BufferCreateInfo
-        { next = (),
-          flags = zero,
-          size = fromIntegral bufferSize,
-          usage
-            = BUFFER_USAGE_TRANSFER_DST_BIT
-            .|. BUFFER_USAGE_VERTEX_BUFFER_BIT,
-          sharingMode = SHARING_MODE_EXCLUSIVE,
-          queueFamilyIndices = [] -- Ignored
-        }
 
-  let allocInfo = zero
-        { requiredFlags = MEMORY_PROPERTY_DEVICE_LOCAL_BIT }
-  
-  (_, res) <- withBuffer allocator bufferInfo allocInfo allocate
-  let (buffer, _, _) = res
+  -- Create the vertex buffer
+  (buffer, _, _) <- withBuffer' bufferSize vertUsage vertFlags allocator
 
-  -- Copy data
-  device <- getDevice
-  graphicsQueue <- getGraphicsQueue
-  commandPool <- getCommandPool
-  copyBuffer device graphicsQueue commandPool stagingBuffer buffer (fromIntegral bufferSize)
+  -- Copy the vertices over
+  copyBuffer stagingBuffer buffer (fromIntegral bufferSize)
   
   return buffer
 
 withIndexBuffer :: Allocator -> Vulkan Buffer
 withIndexBuffer allocator = do
-  let bufferSize = sizeOf (head vertexIndices) * length vertexIndices
+  let bufferSize = fromIntegral $ sizeOf (head vertexIndices) * length vertexIndices
+      stageFlags = MEMORY_PROPERTY_HOST_VISIBLE_BIT .|. MEMORY_PROPERTY_HOST_COHERENT_BIT
+      stageUsage = BUFFER_USAGE_TRANSFER_SRC_BIT
+      indexFlags = MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+      indexUsage = BUFFER_USAGE_TRANSFER_DST_BIT .|. BUFFER_USAGE_INDEX_BUFFER_BIT
 
-  let stagingBufferInfo = BufferCreateInfo
-        { next = (),
-          flags = zero,
-          size = fromIntegral bufferSize,
-          usage = BUFFER_USAGE_TRANSFER_SRC_BIT,
-          sharingMode = SHARING_MODE_EXCLUSIVE,
-          queueFamilyIndices = [] -- Ignored
-        }
-      stagingAllocInfo = zero
-        { requiredFlags
-            = MEMORY_PROPERTY_HOST_VISIBLE_BIT
-            .|. MEMORY_PROPERTY_HOST_COHERENT_BIT
-        }
+  -- Create a staging buffer
+  (stagingBuffer, _, stagingAlloc) <- withBuffer' bufferSize stageUsage stageFlags allocator
 
-  (_, staging) <- withBuffer allocator stagingBufferInfo stagingAllocInfo allocate
-  let (stagingBuffer, stagingAlloc, _) = staging
-
+  -- Upload the indices
   (unmapStaging, data') <- withMappedMemory allocator stagingAlloc allocate
   liftIO $ pokeArray (castPtr data') vertexIndices
   release unmapStaging
 
-  let bufferInfo = BufferCreateInfo
-        { next = (),
-          flags = zero,
-          size = fromIntegral bufferSize,
-          usage
-            = BUFFER_USAGE_TRANSFER_DST_BIT
-            .|. BUFFER_USAGE_INDEX_BUFFER_BIT,
-          sharingMode = SHARING_MODE_EXCLUSIVE,
-          queueFamilyIndices = [] -- Ignored
-        }
+  -- Create the vertex buffer
+  (buffer, _, _) <- withBuffer' bufferSize indexUsage indexFlags allocator
 
-      allocInfo = zero
-        { requiredFlags = MEMORY_PROPERTY_DEVICE_LOCAL_BIT }
-  
-  (_, res) <- withBuffer allocator bufferInfo allocInfo allocate
-  let (buffer, _, _) = res
-
-  -- Copy data
-  device <- getDevice
-  graphicsQueue <- getGraphicsQueue
-  commandPool <- getCommandPool
-  copyBuffer device graphicsQueue commandPool stagingBuffer buffer (fromIntegral bufferSize)
+  -- Copy the data over
+  copyBuffer stagingBuffer buffer (fromIntegral bufferSize)
   
   return buffer
 
 withUniformBuffers :: V.Vector ImageView -> Allocator -> Vulkan (V.Vector (Buffer, Allocation))
 withUniformBuffers imageViews allocator = do
   let bufferSize = sizeOf (zero :: UniformBufferObject)
-
-  let bufferInfo = BufferCreateInfo
-        { next = (),
-          flags = zero,
-          size = fromIntegral bufferSize,
-          usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-          sharingMode = SHARING_MODE_EXCLUSIVE,
-          queueFamilyIndices = []
-        }
-
-      allocInfo = zero
-        { requiredFlags
-            = MEMORY_PROPERTY_HOST_VISIBLE_BIT
-            .|. MEMORY_PROPERTY_HOST_COHERENT_BIT
-        }
+      usageFlags = BUFFER_USAGE_UNIFORM_BUFFER_BIT
+      memFlags = MEMORY_PROPERTY_HOST_VISIBLE_BIT .|. MEMORY_PROPERTY_HOST_COHERENT_BIT
 
   forM imageViews $ \_ -> do
-    (_, result) <- withBuffer allocator bufferInfo allocInfo allocate
-    let (buffer, alloc, _) = result
+    (buffer, _, alloc) <- withBuffer' (fromIntegral bufferSize) usageFlags memFlags allocator
     return (buffer, alloc)
 
-withDescriptorSets' :: V.Vector ImageView -> V.Vector Buffer -> Vulkan (V.Vector DescriptorSet)
-withDescriptorSets' imageViews uniformBuffers = do
+withTextureImage :: Vulkan Image
+withTextureImage = do
+  allocator <- getAllocator
+  (P.Image width height imageData) <- readImage "assets/house.jpg"
+
+  let imageSize = fromIntegral $ S.length imageData * sizeOf (undefined :: Word8)
+      stageFlags = MEMORY_PROPERTY_HOST_VISIBLE_BIT .|. MEMORY_PROPERTY_HOST_COHERENT_BIT
+      stageUsage = BUFFER_USAGE_TRANSFER_SRC_BIT
+
+  -- Create a staging buffer
+  (stagingBuffer, stagingKey, stagingAlloc)
+    <- withBuffer' imageSize stageUsage stageFlags allocator
+
+  -- Upload the image
+  (unmapStaging, data') <- withMappedMemory allocator stagingAlloc allocate
+  liftIO $ pokeArray (castPtr data') (S.toList imageData)
+  release unmapStaging
+
+  -- Create a Vulkan Image
+  let imageInfo = ImageCreateInfo
+        { next = (),
+          flags = zero,
+          imageType = IMAGE_TYPE_2D,
+          format = FORMAT_R8G8B8A8_SRGB,
+          extent = Extent3D (fromIntegral width) (fromIntegral height) 1,
+          mipLevels = 1,
+          arrayLayers = 1,
+          samples = SAMPLE_COUNT_1_BIT,
+          tiling = IMAGE_TILING_OPTIMAL,
+          usage = IMAGE_USAGE_TRANSFER_DST_BIT .|. IMAGE_USAGE_SAMPLED_BIT,
+          sharingMode = SHARING_MODE_EXCLUSIVE,
+          queueFamilyIndices = [],
+          initialLayout = IMAGE_LAYOUT_UNDEFINED
+        }
+
+      allocateInfo = zero
+        { requiredFlags = MEMORY_PROPERTY_DEVICE_LOCAL_BIT }
+
+  (_, res) <- withImage allocator imageInfo allocateInfo allocate
+  let (vkImage, _, _) = res
+
+  -- Transition the layout
+  transitionImageLayout
+    vkImage
+    IMAGE_LAYOUT_UNDEFINED
+    IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+
+  copyBufferToImage stagingBuffer vkImage (fromIntegral width) (fromIntegral height)
+
+  transitionImageLayout
+    vkImage
+    IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+    IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+
+  -- Clean up
+  release stagingKey
+
+  return vkImage
+
+withTextureImageView :: Image -> Vulkan ImageView
+withTextureImageView image = do
+  device <- getDevice
+  withImageView' device image FORMAT_R8G8B8A8_SRGB
+
+withTextureSampler :: Vulkan Sampler
+withTextureSampler = do
+  device <- getDevice
+  physicalDevice <- getPhysicalDevice
+
+  PhysicalDeviceProperties{limits=limits} <- getPhysicalDeviceProperties physicalDevice
+  
+  let samplerInfo = SamplerCreateInfo
+        { next = (),
+          flags = zero,
+          magFilter = FILTER_LINEAR,
+          minFilter = FILTER_LINEAR,
+          mipmapMode = SAMPLER_MIPMAP_MODE_LINEAR,
+          addressModeU = SAMPLER_ADDRESS_MODE_REPEAT,
+          addressModeV = SAMPLER_ADDRESS_MODE_REPEAT,
+          addressModeW = SAMPLER_ADDRESS_MODE_REPEAT,
+          mipLodBias = 0,
+          anisotropyEnable = True,
+          maxAnisotropy = maxSamplerAnisotropy limits,
+          compareEnable = False,
+          compareOp = COMPARE_OP_ALWAYS,
+          minLod = 0,
+          maxLod = 0,
+          borderColor = BORDER_COLOR_INT_OPAQUE_BLACK,
+          unnormalizedCoordinates = False
+        }
+
+  snd <$> withSampler device samplerInfo Nothing allocate
+
+withDescriptorSets'
+  :: V.Vector ImageView
+  -> V.Vector Buffer
+  -> ImageView
+  -> Sampler
+  -> DescriptorSetLayout
+  -> Vulkan (V.Vector DescriptorSet)
+withDescriptorSets' imageViews uniformBuffers texture sampler setLayout = do
   device <- getDevice
 
   -- Create the descriptor set pool
@@ -541,27 +547,13 @@ withDescriptorSets' imageViews uniformBuffers = do
         { next = (),
           flags = zero,
           maxSets = fromIntegral count,
-          poolSizes = [poolSize]
+          poolSizes
+            = [ poolSize { type' = DESCRIPTOR_TYPE_UNIFORM_BUFFER },
+                poolSize { type' = DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER }
+              ]
         }
 
   (_, descriptorPool) <- withDescriptorPool device poolInfo Nothing allocate
-
-  -- Create the descriptor set layouts
-  let layoutBinding = DescriptorSetLayoutBinding
-        { binding = 0,
-          descriptorType = DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-          descriptorCount = 1,
-          stageFlags = SHADER_STAGE_VERTEX_BIT,
-          immutableSamplers = []
-        }
-
-      layoutInfo = DescriptorSetLayoutCreateInfo
-        { next = (),
-          flags = zero,
-          bindings = [layoutBinding]
-        }
-
-  (_, setLayout) <- withDescriptorSetLayout device layoutInfo Nothing allocate
 
   -- Create the descriptor set
   let setInfo = DescriptorSetAllocateInfo
@@ -580,7 +572,13 @@ withDescriptorSets' imageViews uniformBuffers = do
                 range = fromIntegral $ sizeOf (zero :: UniformBufferObject)
               }
 
-            descriptorWrite = WriteDescriptorSet
+            imageInfo = DescriptorImageInfo
+              { sampler = sampler,
+                imageView = texture,
+                imageLayout = IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+              }
+
+            uniformDescWrite = SomeStruct $ WriteDescriptorSet
               { next = (),
                 dstSet = descriptorSet,
                 dstBinding = 0,
@@ -592,20 +590,31 @@ withDescriptorSets' imageViews uniformBuffers = do
                 texelBufferView = []
               }
 
-        updateDescriptorSets device [SomeStruct descriptorWrite] []
+            imageDescWrite = SomeStruct $ WriteDescriptorSet
+              { next = (),
+                dstSet = descriptorSet,
+                dstBinding = 1,
+                dstArrayElement = 0,
+                descriptorCount = 1,
+                descriptorType = DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                imageInfo = [imageInfo],
+                bufferInfo = [],
+                texelBufferView = []
+              }
+
+        updateDescriptorSets device [uniformDescWrite, imageDescWrite] []
     )
     descriptorSets
     uniformBuffers
 
   return descriptorSets
-  
 
 withPipelineLayout'
   :: MonadResource m
   => Device
+  -> DescriptorSetLayout
   -> m PipelineLayout
-withPipelineLayout' device = do
-  setLayout <- withDescriptorSetLayout' device
+withPipelineLayout' device setLayout = do
   let pipelineLayoutInfo = PipelineLayoutCreateInfo
         { flags = zero,
           setLayouts = [setLayout],
@@ -634,6 +643,51 @@ withShaderModules device
             code = vertexShaderCode
           }
 
+transitionImageLayout
+  :: Image
+  -> ImageLayout
+  -> ImageLayout
+  -> Vulkan ()
+transitionImageLayout image oldLayout newLayout = withOneTimeCommands $ do
+  (sourceStage, destinationStage, srcAccessMask, dstAccessMask)
+    <- case (oldLayout, newLayout) of
+         (IMAGE_LAYOUT_UNDEFINED, IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) -> return
+           (PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            PIPELINE_STAGE_TRANSFER_BIT,
+            zero,
+            ACCESS_TRANSFER_WRITE_BIT
+           )
+         (IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) -> return
+           (PIPELINE_STAGE_TRANSFER_BIT,
+            PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            ACCESS_TRANSFER_WRITE_BIT,
+            ACCESS_SHADER_READ_BIT
+           )
+         _ -> liftIO $ throwM $ userError ""
+  
+  let subRange = ImageSubresourceRange
+        { aspectMask = IMAGE_ASPECT_COLOR_BIT,
+          baseMipLevel = 0,
+          levelCount = 1,
+          baseArrayLayer = 0,
+          layerCount = 1
+        }
+
+      barrier = ImageMemoryBarrier
+        { next = (),
+          srcAccessMask = srcAccessMask,
+          dstAccessMask = dstAccessMask,
+          oldLayout = oldLayout,
+          newLayout = newLayout,
+          srcQueueFamilyIndex = QUEUE_FAMILY_IGNORED,
+          dstQueueFamilyIndex = QUEUE_FAMILY_IGNORED,
+          image = image,
+          subresourceRange = subRange
+        }
+
+  commandBuffer <- getCommandBuffer
+  cmdPipelineBarrier commandBuffer sourceStage destinationStage zero [] [] [SomeStruct barrier]
+
 withDescriptorSetLayout'
   :: MonadResource m
   => Device
@@ -641,7 +695,7 @@ withDescriptorSetLayout'
 withDescriptorSetLayout' device
   = snd <$> withDescriptorSetLayout device layoutInfo Nothing allocate
 
-  where layoutBinding = DescriptorSetLayoutBinding
+  where uniformLayoutBinding = DescriptorSetLayoutBinding
           { binding = 0,
             descriptorType = DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             descriptorCount = 1,
@@ -649,8 +703,17 @@ withDescriptorSetLayout' device
             immutableSamplers = []
           }
 
+        samplerLayoutBinding = DescriptorSetLayoutBinding
+          { binding = 1,
+            descriptorType = DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            descriptorCount = 1,
+            stageFlags = SHADER_STAGE_FRAGMENT_BIT,
+            immutableSamplers = []
+          }
+
         layoutInfo = DescriptorSetLayoutCreateInfo
           { next = (),
             flags = zero,
-            bindings = [layoutBinding]
+            bindings = [uniformLayoutBinding, samplerLayoutBinding]
           }
+

@@ -2,7 +2,7 @@ module Seangine.Render (renderFrame, recordCommandBuffer) where
 
 import Control.Monad.Trans.Reader
 import Data.Word
-import Foreign.Storable.Generic
+import Foreign.Storable
 import Foreign.Ptr (castPtr)
 import GHC.Clock (getMonotonicTime)
 import qualified Data.Vector as V
@@ -70,7 +70,7 @@ recordCommandBuffer Frame{..} framebuffer = do
             renderPass = fRenderPass,
             framebuffer = framebuffer,
             renderArea = Rect2D zero fImageExtent,
-            clearValues = [Color $ Float32 0.1 0.1 0.1 0]
+            clearValues = [Color $ Float32 0.0 0.0 0.0 0]
           }
   
   cmdUseRenderPass commandBuffer renderPassInfo SUBPASS_CONTENTS_INLINE $ do

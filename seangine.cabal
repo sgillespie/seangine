@@ -14,10 +14,9 @@ executable seangine
     build-depends:
       base < 5,
       bytestring,
-      derive-storable-plugin,
-      derive-storable,
       GLFW-b,
       extra,
+      JuicyPixels,
       linear,
       resourcet,
       transformers,

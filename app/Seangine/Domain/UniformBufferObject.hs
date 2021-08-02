@@ -1,7 +1,7 @@
 module Seangine.Domain.UniformBufferObject (UniformBufferObject(..)) where
 
 import Foreign.Ptr
-import Foreign.Storable.Generic
+import Foreign.Storable
 
 import Linear hiding (zero)
 import Vulkan.Zero
