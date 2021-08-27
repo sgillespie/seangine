@@ -192,7 +192,8 @@ withAllocator' instance' physicalDevice device
             vulkanFunctions = Nothing,
             recordSettings = Nothing,
             instance' = instanceHandle instance',
-            vulkanApiVersion = API_VERSION_1_0
+            vulkanApiVersion = API_VERSION_1_0,
+            typeExternalMemoryHandleTypes = zero
           }
 
 withCommandPool' :: MonadResource m => Device -> Word32 -> m CommandPool

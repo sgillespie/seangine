@@ -7,10 +7,13 @@ author:             Sean D Gillespie
 maintainer:         sean@mistersg.net
 copyright:          2021
 category:           Graphics
+data-files:         assets/*.jpg
 executable seangine
     main-is:            Main.hs
     hs-source-dirs:     app
     default-language:   Haskell2010
+    if os(windows)
+      ghc-options:      -optc-static -optl-static -optl-pthread
     build-depends:
       base < 5,
       bytestring,

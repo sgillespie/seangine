@@ -1,0 +1,6 @@
+packages: *.cabal
+
+package vulkan
+    extra-lib-dirs: C:\VulkanSDK\1.2.182.0\Lib
+    extra-include-dirs: C:\VulkanSDK\1.2.182.0\Include
+    ghc-options: -lstdc++
