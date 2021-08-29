@@ -9,6 +9,7 @@ module Seangine.GraphicsPipeline
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Reader
 import Data.Bits
+import System.FilePath
 import Data.Traversable
 import Data.Word
 import Foreign.C.Types
@@ -436,7 +437,8 @@ withUniformBuffers imageViews allocator = do
 withTextureImage :: Vulkan Image
 withTextureImage = do
   allocator <- getAllocator
-  (P.Image width height imageData) <- readImage "assets/house.jpg"
+  dataDir <- getDataDir
+  (P.Image width height imageData) <- readImage $ dataDir </> "assets" </> "house" <.> "jpg"
 
   let imageSize = fromIntegral $ S.length imageData * sizeOf (undefined :: Word8)
       stageFlags = MEMORY_PROPERTY_HOST_VISIBLE_BIT .|. MEMORY_PROPERTY_HOST_COHERENT_BIT
@@ -564,7 +566,7 @@ withDescriptorSets' imageViews uniformBuffers texture sampler setLayout = do
 
   descriptorSets <- allocateDescriptorSets device setInfo
 
-  _ <- V.zipWithM
+  V.zipWithM_
     (\descriptorSet buffer -> do
         let bufferInfo = DescriptorBufferInfo
               { buffer = buffer,

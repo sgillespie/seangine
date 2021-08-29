@@ -19,6 +19,7 @@ executable seangine
       bytestring,
       GLFW-b,
       extra,
+      filepath,
       JuicyPixels,
       linear,
       resourcet,
@@ -38,6 +39,7 @@ executable seangine
       OverloadedLists,
       RecordWildCards
     other-modules:
+      Paths_seangine,
       Seangine.Domain,
       Seangine.Domain.Frame,
       Seangine.Domain.UniformBufferObject,

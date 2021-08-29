@@ -10,21 +10,29 @@ import Vulkan.Core10
 import Vulkan.Zero
 import qualified Graphics.UI.GLFW as GLFW
 
+import Paths_seangine
 import Seangine.GraphicsPipeline
 import Seangine.Init
 import Seangine.Monad
+    ( Frame(..),
+      Vulkan,
+      MonadVulkan(getPhysicalDevice),
+      runVulkan,
+      runCmdT,
+      runFrame )
 import Seangine.Render
 import Seangine.Window
 
 main :: IO ()
 main = runResourceT $ do
+  dataDir <- liftIO getDataDir
   (_, window) <- withWindow "Seangine 0.1.0" 800 600
   windowExts <- liftIO $
     GLFW.getRequiredInstanceExtensions >>= traverse B.packCString . V.fromList
   instance' <- withInstance' windowExts
   (_, surface) <- withWindowSurface instance' window
 
-  handles <- withVulkanHandles instance' surface
+  handles <- withVulkanHandles dataDir instance' surface
   runVulkan handles $ do
     reportPhysicalDevice
     
@@ -79,10 +87,12 @@ frame window buffers frame' = do
 
 reportFps :: Frame -> IO ()
 reportFps Frame{..} = do
+  dataDir <- getDataDir
   end <- liftIO getMonotonicTime
   let seconds = end - fStartTime
   let fps = fromIntegral fIndex / seconds
   
+  putStrLn $ "Data dir: " ++ dataDir
   putStrLn $ "Processed: " ++ show fIndex ++ " Frames"
   putStrLn $ "Ran for: " ++ show seconds ++ " Secs"
   putStrLn $ "Average: " ++ show fps ++ " FPS"

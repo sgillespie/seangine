@@ -18,6 +18,7 @@ import VulkanMemoryAllocator
 
 -- |Vulkan monad class. Contains convenience accessors to Vulkan handles
 class Monad m => MonadVulkan m where
+  getDataDir :: m FilePath
   getInstance :: m Instance
   getPhysicalDevice :: m PhysicalDevice
   getDevice :: m Device
@@ -29,6 +30,7 @@ class Monad m => MonadVulkan m where
   getCommandPool :: m CommandPool
 
 instance MonadVulkan m => MonadVulkan (ReaderT r m) where
+  getDataDir = lift getDataDir
   getInstance = lift getInstance
   getPhysicalDevice = lift getPhysicalDevice
   getDevice = lift getDevice
@@ -41,7 +43,8 @@ instance MonadVulkan m => MonadVulkan (ReaderT r m) where
 
 -- |References to all relevant Vulkan handles
 data VulkanHandles = VulkanHandles
-  { vhInstance :: Instance,
+  { vhDataDir :: FilePath,
+    vhInstance :: Instance,
     vhPhysicalDevice :: PhysicalDevice,
     vhDevice :: Device,
     vhAllocator :: Allocator,
@@ -64,6 +67,7 @@ newtype Vulkan a
            )
 
 instance MonadVulkan Vulkan where
+  getDataDir = Vulkan (asks vhDataDir)
   getInstance = Vulkan (asks vhInstance)
   getPhysicalDevice = Vulkan (asks vhPhysicalDevice)
   getDevice = Vulkan (asks vhDevice)

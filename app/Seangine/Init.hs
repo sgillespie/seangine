@@ -42,10 +42,11 @@ debugMsgTypes =
 
 withVulkanHandles
   :: (MonadResource m, MonadThrow m)
-  => Instance
+  => FilePath
+  -> Instance
   -> SurfaceKHR
   -> m VulkanHandles
-withVulkanHandles instance' surface = do
+withVulkanHandles dataDir instance' surface = do
   physicalDevice <- choosePhysicalDevice instance'
   (graphicsFamilyIndex, presentFamilyIndex)
     <- getQueueFamilyIndices physicalDevice surface
@@ -56,7 +57,8 @@ withVulkanHandles instance' surface = do
   commandPool <- withCommandPool' device graphicsFamilyIndex
 
   return VulkanHandles
-    { vhInstance = instance',
+    { vhDataDir = dataDir,
+      vhInstance = instance',
       vhPhysicalDevice = physicalDevice,
       vhDevice = device,
       vhAllocator = allocator,
