@@ -9,6 +9,7 @@ module Seangine.GraphicsPipeline
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Reader
 import Data.Bits
+import Data.Maybe
 import System.FilePath
 import Data.Traversable
 import Data.Word
@@ -34,17 +35,28 @@ import Seangine.Domain
 import Seangine.Monad
 import Seangine.Shaders (fragShaderCode, vertexShaderCode)
 import Seangine.Utils
+import Vulkan (getPhysicalDeviceFeatures)
+import Vulkan.Core11.Promoted_From_VK_KHR_sampler_ycbcr_conversion (Format(FORMAT_D32_SFLOAT_S8_UINT))
+import Vulkan.Core10.Enums.Format (Format(FORMAT_D24_UNORM_S8_UINT))
 
 vertices :: [Vertex]
 vertices
-  = [ Vertex (V2 (-0.5) (-0.5)) (V3 1 0 0) (V2 1 0),
-      Vertex (V2   0.5  (-0.5)) (V3 0 1 0) (V2 0 0),
-      Vertex (V2   0.5    0.5)  (V3 0 0 1) (V2 0 1),
-      Vertex (V2 (-0.5)   0.5)  (V3 1 1 1) (V2 1 1)
+  = [ Vertex (V3 (-0.5) (-0.5) 0) (V3 1 0 0) (V2 1 0),
+      Vertex (V3   0.5  (-0.5) 0) (V3 0 1 0) (V2 0 0),
+      Vertex (V3   0.5    0.5  0) (V3 0 0 1) (V2 0 1),
+      Vertex (V3 (-0.5)   0.5  0) (V3 1 1 1) (V2 1 1),
+
+      Vertex (V3 (-0.5) (-0.5) (-0.5)) (V3 1 0 0) (V2 1 0),
+      Vertex (V3   0.5  (-0.5) (-0.5)) (V3 0 1 0) (V2 0 0),
+      Vertex (V3   0.5    0.5  (-0.5)) (V3 0 0 1) (V2 0 1),
+      Vertex (V3 (-0.5)   0.5  (-0.5)) (V3 1 1 1) (V2 1 1)
     ]
 
 vertexIndices :: [CUShort]
-vertexIndices = [0, 1, 2, 2, 3, 0]
+vertexIndices 
+  = [ 0, 1, 2, 2, 3, 0,
+      4, 5, 6, 6, 7, 4
+    ]
 
 withVulkanFrame :: SurfaceKHR -> Vulkan Frame
 withVulkanFrame surface = do
@@ -53,12 +65,14 @@ withVulkanFrame surface = do
   allocator <- getAllocator
   
   (swapchain, extent) <- withSwapchain handles surface
-  renderPass <- withRenderPass' device
+  (depthImage, depthFormat) <- withDepthImage extent
+  depthImageView <- withDepthImageView depthImage depthFormat
+  renderPass <- withRenderPass' depthFormat 
   setLayout <- withDescriptorSetLayout' device
   pipelineLayout <- withPipelineLayout' device setLayout
   pipeline <- withGraphicsPipeline pipelineLayout renderPass extent
-  imageViews <- withImageViews device swapchain
-  framebuffers <- withFramebuffers device imageViews renderPass extent
+  imageViews <- withImageViews swapchain
+  framebuffers <- withFramebuffers imageViews depthImageView renderPass extent
   (available, finished) <- withSemaphores device
   resources <- allocate createInternalState closeInternalState
   start <- liftIO getMonotonicTime
@@ -66,7 +80,6 @@ withVulkanFrame surface = do
   vertexBuffer <- withVertexBuffer allocator
   indexBuffer <- withIndexBuffer allocator
   uniformBuffers <- withUniformBuffers imageViews allocator
-
   textureImage <- withTextureImage
   textureImageView <- withTextureImageView textureImage
   textureSampler <- withTextureSampler
@@ -153,17 +166,18 @@ withSwapchain VulkanHandles{..} surface = do
   (_, swapchain) <- withSwapchainKHR vhDevice createInfo Nothing allocate
   return (swapchain, extent)
 
-withRenderPass' :: MonadResource m => Device -> m RenderPass
-withRenderPass' device = snd <$> withRenderPass device renderPassInfo Nothing allocate
+withRenderPass' :: Format -> Vulkan RenderPass
+withRenderPass' depthFormat = getDevice >>= \device ->
+  snd <$> withRenderPass device renderPassInfo Nothing allocate
   where renderPassInfo = RenderPassCreateInfo
           { next = (),
             flags = zero,
-            attachments = [attachment],
+            attachments = [colorAttachment, depthAttachment],
             subpasses = [subpass],
             dependencies = [subpassDependency]
           }
 
-        attachment = AttachmentDescription
+        colorAttachment = AttachmentDescription
           { flags = zero,
             format = FORMAT_B8G8R8A8_SRGB,
             samples = SAMPLE_COUNT_1_BIT,
@@ -175,29 +189,53 @@ withRenderPass' device = snd <$> withRenderPass device renderPassInfo Nothing al
             finalLayout = IMAGE_LAYOUT_PRESENT_SRC_KHR
           }
 
+        depthAttachment = AttachmentDescription
+          { flags = zero,
+            format = depthFormat,
+            samples = SAMPLE_COUNT_1_BIT,
+            loadOp = ATTACHMENT_LOAD_OP_CLEAR,
+            storeOp = ATTACHMENT_STORE_OP_DONT_CARE,
+            stencilLoadOp = ATTACHMENT_LOAD_OP_DONT_CARE,
+            stencilStoreOp = ATTACHMENT_STORE_OP_DONT_CARE,
+            initialLayout = IMAGE_LAYOUT_UNDEFINED,
+            finalLayout = IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+          }
+
         subpass = SubpassDescription
           { flags = zero,
             pipelineBindPoint = PIPELINE_BIND_POINT_GRAPHICS,
             inputAttachments = [],
-            colorAttachments = [colorAttachment],
+            colorAttachments = [colorAttachmentRef],
             resolveAttachments = [],
-            depthStencilAttachment = Nothing,
+            depthStencilAttachment = Just depthAttachmentRef,
             preserveAttachments = []
           }
 
         subpassDependency = SubpassDependency
           { srcSubpass = SUBPASS_EXTERNAL,
             dstSubpass = 0,
-            srcStageMask = PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            srcStageMask 
+              = PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT 
+              .|. PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
             srcAccessMask = zero,
-            dstStageMask = PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            dstAccessMask = ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            dstStageMask 
+              = PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+              .|. PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+            dstAccessMask 
+              = ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+              .|. ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
             dependencyFlags = zero
           }
 
-        colorAttachment = AttachmentReference
+        colorAttachmentRef = AttachmentReference
           { attachment = 0,
             layout = IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+          }
+
+        depthAttachmentRef = AttachmentReference
+          { attachment = 1,
+            layout = IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+
           }
 
 withGraphicsPipeline :: PipelineLayout -> RenderPass -> Extent2D -> Vulkan Pipeline
@@ -218,7 +256,7 @@ withGraphicsPipeline pipelineLayout renderPass extent@(Extent2D width height) = 
           viewportState = Just $ SomeStruct viewportStateInfo,
           rasterizationState = SomeStruct rasterizerInfo,
           multisampleState = Just $ SomeStruct multisampleInfo,
-          depthStencilState = Nothing,
+          depthStencilState = Just stencilInfo,
           colorBlendState = Just $ SomeStruct colorBlendInfo,
           dynamicState = Nothing,
           layout = pipelineLayout,
@@ -296,6 +334,19 @@ withGraphicsPipeline pipelineLayout renderPass extent@(Extent2D width height) = 
           alphaToOneEnable = False
         }
 
+      stencilInfo = PipelineDepthStencilStateCreateInfo
+        { flags = zero,
+          depthTestEnable = True,
+          depthWriteEnable = True,
+          depthCompareOp = COMPARE_OP_LESS,
+          depthBoundsTestEnable = False,
+          stencilTestEnable = False,
+          front = zero,
+          back = zero,
+          minDepthBounds = 0,
+          maxDepthBounds = 1
+        }
+
       colorBlendInfo = PipelineColorBlendStateCreateInfo
         { next = (),
           flags = zero,
@@ -343,31 +394,34 @@ withGraphicsPipeline pipelineLayout renderPass extent@(Extent2D width height) = 
 
   return . V.head . snd $ pipelines
 
-withImageViews :: MonadResource m => Device -> SwapchainKHR -> m (V.Vector ImageView)
-withImageViews device swapchain = do
+withImageViews :: SwapchainKHR -> Vulkan (V.Vector ImageView)
+withImageViews swapchain = do
+  device <- getDevice
   (_, images) <- getSwapchainImagesKHR device swapchain
   for images $ \image ->
-    withImageView' device image FORMAT_B8G8R8A8_SRGB
+    withImageView' image FORMAT_B8G8R8A8_SRGB IMAGE_ASPECT_COLOR_BIT
 
 withFramebuffers
- :: MonadResource m
- => Device
- -> V.Vector ImageView
- -> RenderPass
- -> Extent2D
- -> m (V.Vector Framebuffer)
-withFramebuffers device imageViews renderPass (Extent2D width height)
-  = for imageViews $ \imageView ->
+  :: V.Vector ImageView
+  -> ImageView
+  -> RenderPass
+  -> Extent2D
+  -> Vulkan (V.Vector Framebuffer)
+withFramebuffers imageViews depthImageView renderPass (Extent2D width height) = do
+  device <- getDevice
+
+  let framebufferInfo imageView = FramebufferCreateInfo
+        { next = (),
+          flags = zero,
+          renderPass = renderPass,
+          attachments = [imageView, depthImageView],
+          width = width,
+          height = height,
+          layers = 1
+        }
+
+  for imageViews $ \imageView ->
       snd <$> withFramebuffer device (framebufferInfo imageView) Nothing allocate
-  where framebufferInfo imageView = FramebufferCreateInfo
-          { next = (),
-            flags = zero,
-            renderPass = renderPass,
-            attachments = [imageView],
-            width = width,
-            height = height,
-            layers = 1
-          }
 
 withSemaphores :: MonadResource m => Device -> m (Semaphore, Semaphore)
 withSemaphores device = unwrapM2 (withSemaphore' zero, withSemaphore' zero)
@@ -495,9 +549,8 @@ withTextureImage = do
   return vkImage
 
 withTextureImageView :: Image -> Vulkan ImageView
-withTextureImageView image = do
-  device <- getDevice
-  withImageView' device image FORMAT_R8G8B8A8_SRGB
+withTextureImageView image 
+  = withImageView' image FORMAT_R8G8B8A8_SRGB IMAGE_ASPECT_COLOR_BIT
 
 withTextureSampler :: Vulkan Sampler
 withTextureSampler = do
@@ -528,8 +581,7 @@ withTextureSampler = do
 
   snd <$> withSampler device samplerInfo Nothing allocate
 
-withDescriptorSets'
-  :: V.Vector ImageView
+withDescriptorSets' :: V.Vector ImageView
   -> V.Vector Buffer
   -> ImageView
   -> Sampler
@@ -610,6 +662,62 @@ withDescriptorSets' imageViews uniformBuffers texture sampler setLayout = do
     uniformBuffers
 
   return descriptorSets
+
+withDepthImage :: Extent2D -> Vulkan (Image, Format)
+withDepthImage extent = do
+  -- Find a suitable format
+  device <- getPhysicalDevice
+  allocator <- getAllocator
+  let candidates = V.fromList
+        [ FORMAT_D32_SFLOAT,
+          FORMAT_D32_SFLOAT_S8_UINT,
+          FORMAT_D24_UNORM_S8_UINT 
+        ]
+  let features = FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+
+  formats <- flip V.mapMaybeM candidates $ \candidate -> do
+    FormatProperties{..} <- getPhysicalDeviceFormatProperties device candidate
+
+    return $ if optimalTilingFeatures .&. features == features
+      then Just candidate
+      else Nothing
+
+  let format = if V.null formats
+        then error "Failed to find a supported format!"
+        else V.unsafeHead formats
+
+      hasStencilComponent 
+        = format == FORMAT_D32_SFLOAT_S8_UINT 
+        || format == FORMAT_D24_UNORM_S8_UINT
+
+  -- Create the image
+  let Extent2D width height = extent
+      imageInfo = ImageCreateInfo
+        { next = (),
+          flags = zero,
+          imageType = IMAGE_TYPE_2D,
+          format = format,
+          extent = Extent3D width height 1,
+          mipLevels = 1,
+          arrayLayers = 1,
+          samples = SAMPLE_COUNT_1_BIT,
+          tiling = IMAGE_TILING_OPTIMAL,
+          usage = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+          sharingMode = SHARING_MODE_EXCLUSIVE,
+          queueFamilyIndices = [],
+          initialLayout = IMAGE_LAYOUT_UNDEFINED
+        }
+
+      allocateInfo = zero
+        { requiredFlags = MEMORY_PROPERTY_DEVICE_LOCAL_BIT }
+
+  (_, res) <- withImage allocator imageInfo allocateInfo allocate
+  let (image, _, _) = res
+
+  return (image, format)
+
+withDepthImageView :: Image -> Format -> Vulkan ImageView 
+withDepthImageView image format = withImageView' image  format IMAGE_ASPECT_DEPTH_BIT 
 
 withPipelineLayout'
   :: MonadResource m

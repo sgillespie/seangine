@@ -12,17 +12,17 @@ import Vulkan.Zero
 
 -- |A vertex, containing a 2D position and RGB color
 data Vertex = Vertex
-  { position :: V2 Float,
+  { position :: V3 Float,
     color :: V3 Float,
     textureCoordinate :: V2 Float
   } deriving (Eq, Show)
 
 instance Zero Vertex where
-  zero = Vertex (V2 0 0) (V3 0 0 0) (V2 0 0)
+  zero = Vertex (V3 0 0 0) (V3 0 0 0) (V2 0 0)
 
 instance Storable Vertex where
   sizeOf _
-    = sizeOf (undefined :: V2 Float)
+    = sizeOf (undefined :: V3 Float)
     + sizeOf (undefined :: V3 Float)
     + sizeOf (undefined :: V2 Float)
   alignment _ = alignment (undefined :: Float)
@@ -42,7 +42,7 @@ vertexAttributes
   = [ VertexInputAttributeDescription
         { location = 0,
           binding = 0,
-          format = FORMAT_R32G32_SFLOAT,
+          format = FORMAT_R32G32B32_SFLOAT,
           offset = 0
         },
 

@@ -47,9 +47,14 @@ withBuffer' bufferSize usageFlags requiredMemoryFlags allocator = do
   
   return (buffer, bufferRelease, alloc)
 
-withImageView' :: MonadResource m => Device -> Image -> Format -> m ImageView
-withImageView' device image format
-  = snd <$> withImageView device viewInfo Nothing allocate
+withImageView' 
+  :: Image 
+  -> Format
+  -> ImageAspectFlags
+  -> Vulkan ImageView
+withImageView' image format flags = do
+  getDevice >>= \device -> 
+    snd <$> withImageView device viewInfo Nothing allocate
   where components = ComponentMapping
           { r = COMPONENT_SWIZZLE_IDENTITY,
             g = COMPONENT_SWIZZLE_IDENTITY,
@@ -58,7 +63,7 @@ withImageView' device image format
           }
 
         subRange = ImageSubresourceRange
-          { aspectMask = IMAGE_ASPECT_COLOR_BIT,
+          { aspectMask = flags,
             baseMipLevel = 0,
             levelCount = 1,
             baseArrayLayer = 0,

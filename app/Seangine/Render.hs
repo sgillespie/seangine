@@ -70,7 +70,10 @@ recordCommandBuffer Frame{..} framebuffer = do
             renderPass = fRenderPass,
             framebuffer = framebuffer,
             renderArea = Rect2D zero fImageExtent,
-            clearValues = [Color $ Float32 0.0 0.0 0.0 0]
+            clearValues 
+              = [ Color $ Float32 0 0 0 0,
+                  DepthStencil $ ClearDepthStencilValue 1 0
+                ]
           }
   
   cmdUseRenderPass commandBuffer renderPassInfo SUBPASS_CONTENTS_INLINE $ do
