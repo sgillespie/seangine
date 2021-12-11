@@ -1,5 +1,5 @@
 { nixpkgs ? import <nixpkgs> {},
-  compiler ? "ghc8104"
+  compiler ? "ghc8107"
 }:
 
 (import ./default.nix {
