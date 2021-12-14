@@ -1,56 +1,33 @@
-cabal-version:      2.4
+cabal-version:      3.0
 name:               seangine
-version:            0.1.0.0
-synopsis:           Vulkan renderer by and for Sean Gillespie
-description:        Vulkan renderer by and for Sean Gillespie
+version:            0.2.0.0
+synopsis:           A Vulkan renderer by and for Sean Gillespie
+description:        A Vulkan renderer by and for Sean Gillespie
+homepage:           https://github.com/sgillespie/seangine
+license:            MIT
+license-file:       LICENSE
 author:             Sean D Gillespie
 maintainer:         sean@mistersg.net
 copyright:          2021
 category:           Graphics
-data-files:         assets/*.jpg
+
+library
+    exposed-modules:  MyLib
+    build-depends:    base ^>=4.14.3.0
+    hs-source-dirs:   lib
+    default-language: Haskell2010
+
 executable seangine
-    main-is:            Main.hs
-    hs-source-dirs:     app
-    default-language:   Haskell2010
-    if os(windows)
-      ghc-options:      -optc-static -optl-static -optl-pthread
+    main-is:          Main.hs
     build-depends:
-      base < 5,
-      bytestring,
-      GLFW-b,
-      extra,
-      filepath,
-      JuicyPixels,
-      linear,
-      resourcet,
-      transformers,
-      unliftio-core,
-      vector,
-      vulkan,
-      vulkan-utils,
-      VulkanMemoryAllocator
-    default-extensions:
-      DataKinds,
-      DerivingStrategies,
-      DuplicateRecordFields,
-      GeneralizedNewtypeDeriving,
-      NumDecimals,
-      OverloadedStrings,
-      OverloadedLists,
-      RecordWildCards
-    other-modules:
-      Paths_seangine,
-      Seangine.Domain,
-      Seangine.Domain.Frame,
-      Seangine.Domain.UniformBufferObject,
-      Seangine.Domain.Vertex,
-      Seangine.Monad
-      Seangine.Monad.Cmd,
-      Seangine.Monad.VulkanFrame,
-      Seangine.Monad.Vulkan,
-      Seangine.GraphicsPipeline,
-      Seangine.Init,
-      Seangine.Render,
-      Seangine.Shaders,
-      Seangine.Utils,
-      Seangine.Window
+        base ^>=4.14.3.0,
+        seangine
+    hs-source-dirs:   app
+    default-language: Haskell2010
+
+test-suite seangine-test
+    default-language: Haskell2010
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          MyLibTest.hs
+    build-depends:    base ^>=4.14.3.0
