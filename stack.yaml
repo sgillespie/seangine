@@ -1,1 +1,15 @@
 resolver: lts-18.18
+
+extra-deps:
+  - VulkanMemoryAllocator-0.5.1
+  - vulkan-3.10.3
+  - vulkan-utils-0.5.0.1
+
+nix:
+  packages:
+    - pkgconfig
+    - vulkan-headers
+    - vulkan-loader
+    - vulkan-tools
+    - vulkan-tools-lunarg
+    - vulkan-validation-layers

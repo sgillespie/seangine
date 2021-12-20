@@ -3,7 +3,28 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: VulkanMemoryAllocator-0.5.1@sha256:1322273db54e605e5c76c995b4c9730cf7033c94521b563423fa5be541556684,3066
+    pantry-tree:
+      size: 528
+      sha256: 5927b1927e4f553764e8ca890bc5fd79fefec87930795a366a2df998818483e1
+  original:
+    hackage: VulkanMemoryAllocator-0.5.1
+- completed:
+    hackage: vulkan-3.10.3@sha256:55d004cdf1658aa0c1894d7db53ffb592e15752bfd9219ebca1db74d06566946,25143
+    pantry-tree:
+      size: 69337
+      sha256: a8c85009c8c117c36355ccaceb405c102e124a229fd3ad8fa22937b17c84b239
+  original:
+    hackage: vulkan-3.10.3
+- completed:
+    hackage: vulkan-utils-0.5.0.1@sha256:cd62b515e2d2015d2863895e7269a848fe2bfb8cb20db8e37bc81ce963b4abfe,3956
+    pantry-tree:
+      size: 2225
+      sha256: 5aad18d0e01af5c73101a28547baf30cf6d674d8101268b7422e1a733e662d2c
+  original:
+    hackage: vulkan-utils-0.5.0.1
 snapshots:
 - completed:
     size: 586296

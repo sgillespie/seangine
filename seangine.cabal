@@ -13,8 +13,31 @@ category:           Graphics
 
 library
     exposed-modules:
-        Graphics.Seangine
-    build-depends:    base ^>=4.14.3.0
+        Graphics.Seangine,
+        Graphics.Seangine.Domain,
+        Graphics.Seangine.Domain.Frame,
+        Graphics.Seangine.Monad,
+        Graphics.Seangine.Monad.Cmd,
+        Graphics.Seangine.Monad.Vulkan,
+        Graphics.Seangine.Monad.VulkanFrame
+    build-depends:
+        base ^>=4.14.3.0,
+        resourcet,
+        transformers,
+        unliftio-core,
+        vector,
+        vulkan,
+        vulkan-utils,
+        VulkanMemoryAllocator
+    default-extensions:
+        DataKinds,
+        DerivingStrategies,
+        DuplicateRecordFields,
+        GeneralizedNewtypeDeriving,
+        NumDecimals,
+        OverloadedStrings,
+        OverloadedLists,
+        RecordWildCards
     hs-source-dirs:   lib
     default-language: Haskell2010
 
@@ -30,5 +53,21 @@ test-suite seangine-test
     default-language: Haskell2010
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
-    main-is:          MyLibTest.hs
-    build-depends:    base ^>=4.14.3.0
+    main-is:          Spec.hs
+    build-depends:
+        base ^>=4.14.3.0,
+        hspec,
+        seangine,
+        transformers
+    default-extensions:
+        DataKinds,
+        DerivingStrategies,
+        DuplicateRecordFields,
+        GeneralizedNewtypeDeriving,
+        NumDecimals,
+        OverloadedStrings,
+        OverloadedLists,
+        RecordWildCards
+    build-tool-depends: hspec-discover:hspec-discover
+    other-modules:
+        Graphics.Seangine.Monad.VulkanSpec,
