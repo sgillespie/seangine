@@ -1,4 +1,5 @@
-module Graphics.Seangine where
+module Graphics.Seangine
+  (module Graphics.Seangine.Window
+  ) where
 
-helloWorld :: IO ()
-helloWorld = putStrLn "Hello, World!"
+import Graphics.Seangine.Window

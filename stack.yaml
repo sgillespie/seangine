@@ -8,8 +8,10 @@ extra-deps:
 nix:
   packages:
     - pkgconfig
+    - SDL2
     - vulkan-headers
     - vulkan-loader
     - vulkan-tools
     - vulkan-tools-lunarg
     - vulkan-validation-layers
+  pure: false

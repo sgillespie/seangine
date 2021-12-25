@@ -19,12 +19,16 @@ library
         Graphics.Seangine.Monad,
         Graphics.Seangine.Monad.Cmd,
         Graphics.Seangine.Monad.Vulkan,
-        Graphics.Seangine.Monad.VulkanFrame
+        Graphics.Seangine.Monad.VulkanFrame,
+        Graphics.Seangine.Window
     build-depends:
         base ^>=4.14.3.0,
+        bytestring,
         resourcet,
         transformers,
         unliftio-core,
+        sdl2,
+        text,
         vector,
         vulkan,
         vulkan-utils,
@@ -45,6 +49,8 @@ executable seangine
     main-is:          Main.hs
     build-depends:
         base ^>=4.14.3.0,
+        extra,
+        resourcet,
         seangine
     hs-source-dirs:   app
     default-language: Haskell2010
@@ -57,6 +63,7 @@ test-suite seangine-test
     build-depends:
         base ^>=4.14.3.0,
         hspec,
+        resourcet,
         seangine,
         transformers
     default-extensions:
@@ -71,3 +78,4 @@ test-suite seangine-test
     build-tool-depends: hspec-discover:hspec-discover
     other-modules:
         Graphics.Seangine.Monad.VulkanSpec,
+        Graphics.Seangine.WindowSpec
