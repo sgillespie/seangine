@@ -16,6 +16,7 @@ library
         Graphics.Seangine,
         Graphics.Seangine.Domain,
         Graphics.Seangine.Domain.Frame,
+        Graphics.Seangine.Init,
         Graphics.Seangine.Monad,
         Graphics.Seangine.Monad.Cmd,
         Graphics.Seangine.Monad.Vulkan,
@@ -65,7 +66,8 @@ test-suite seangine-test
         hspec,
         resourcet,
         seangine,
-        transformers
+        transformers,
+        vulkan
     default-extensions:
         DataKinds,
         DerivingStrategies,
@@ -77,5 +79,6 @@ test-suite seangine-test
         RecordWildCards
     build-tool-depends: hspec-discover:hspec-discover
     other-modules:
+        Graphics.Seangine.InitSpec,
         Graphics.Seangine.Monad.VulkanSpec,
         Graphics.Seangine.WindowSpec

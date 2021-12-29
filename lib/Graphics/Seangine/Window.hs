@@ -12,13 +12,14 @@ import qualified Data.ByteString as B
 import Data.Text (pack)
 import qualified Data.Vector as V
 import SDL hiding (Vector)
-import SDL.Video.Vulkan (vkGetInstanceExtensions)
-import Vulkan.Core10 (Instance)
-import Vulkan.Extensions.VK_KHR_surface (SurfaceKHR)
+import SDL.Video.Vulkan (vkCreateSurface, vkGetInstanceExtensions)
+import Vulkan.Core10 (Instance(..))
+import Vulkan.Extensions.VK_KHR_surface (SurfaceKHR(..), destroySurfaceKHR)
 
 import Control.Monad ((>=>), void)
 import Control.Monad.IO.Class (MonadIO(..))
 import Foreign.C.String  (peekCString)
+import Foreign.Ptr (castPtr)
 
 withWindow
   :: MonadResource m
@@ -49,7 +50,10 @@ withWindowSurface
   => Instance
   -> Window
   -> m (ReleaseKey, SurfaceKHR)
-withWindowSurface = undefined
+withWindowSurface instance' win = allocate create destroy
+  where create = SurfaceKHR
+               <$> vkCreateSurface win (castPtr (instanceHandle instance'))
+        destroy = flip (destroySurfaceKHR instance') Nothing
 
 awaitWindowEvents :: MonadResource m => m [SDL.Event]
 awaitWindowEvents = (:) <$> waitEvent <*> pollEvents
