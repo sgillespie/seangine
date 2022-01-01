@@ -19,6 +19,7 @@ library
         Graphics.Seangine.Init,
         Graphics.Seangine.Monad,
         Graphics.Seangine.Monad.Cmd,
+        Graphics.Seangine.Monad.Exception,
         Graphics.Seangine.Monad.Vulkan,
         Graphics.Seangine.Monad.VulkanFrame,
         Graphics.Seangine.Window
