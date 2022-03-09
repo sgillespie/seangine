@@ -6,12 +6,5 @@ extra-deps:
   - vulkan-utils-0.5.0.1
 
 nix:
-  packages:
-    - pkgconfig
-    - SDL2
-    - vulkan-headers
-    - vulkan-loader
-    - vulkan-tools
-    - vulkan-tools-lunarg
-    - vulkan-validation-layers
+  shell-file: shell.nix
   pure: false
