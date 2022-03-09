@@ -14,4 +14,3 @@ spec :: Spec
 spec = do
   describe "Init" $ do
     it "withInstance" $ True `shouldBe` True
-

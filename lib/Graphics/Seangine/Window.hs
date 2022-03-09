@@ -66,4 +66,3 @@ shouldQuit = any shouldQuit'
 withSdl :: MonadResource m => m ()
 withSdl = void $ allocate_ create quit
   where create = initialize ([InitEvents, InitVideo] :: [InitFlag])
-
