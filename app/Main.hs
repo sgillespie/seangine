@@ -1,6 +1,7 @@
 module Main where
 
 import Graphics.Seangine
+import Graphics.Seangine.GraphicsPipeline (withVulkanFrame)
 import Graphics.Seangine.Monad (runVulkan)
 import Paths_seangine (getDataDir)
 
@@ -19,4 +20,6 @@ main = runResourceT $ do
   handles <- withVulkanInstance dataDir instance' surface
 
   runVulkan handles $ do
+    initialFrame <- withVulkanFrame surface
+    
     whileM (not . shouldQuit <$> awaitWindowEvents)

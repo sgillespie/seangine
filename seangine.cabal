@@ -16,6 +16,7 @@ library
         Graphics.Seangine,
         Graphics.Seangine.Domain,
         Graphics.Seangine.Domain.Frame,
+        Graphics.Seangine.GraphicsPipeline,
         Graphics.Seangine.Init,
         Graphics.Seangine.Monad,
         Graphics.Seangine.Monad.Cmd,
@@ -23,9 +24,12 @@ library
         Graphics.Seangine.Monad.Vulkan,
         Graphics.Seangine.Monad.VulkanFrame,
         Graphics.Seangine.Window
+    other-modules:
+        Graphics.Seangine.Internal.PhysicalDeviceDetails
     build-depends:
         base ^>=4.14.3.0,
         bytestring,
+        extra,
         resourcet,
         transformers,
         unliftio-core,

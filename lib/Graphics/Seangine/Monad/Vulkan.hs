@@ -9,11 +9,13 @@ module Graphics.Seangine.Monad.Vulkan
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader
+import Data.Vector (Vector)
 import Data.Word (Word32)
 
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Control.Monad.Trans.Resource
 import Vulkan.Core10
+import Vulkan.Extensions.VK_KHR_surface (PresentModeKHR, SurfaceCapabilitiesKHR, SurfaceFormatKHR)
 import VulkanMemoryAllocator
 
 -- |Vulkan monad class. Contains convenience accessors to Vulkan handles
@@ -27,6 +29,9 @@ class Monad m => MonadVulkan m where
   getGraphicsQueueFamily :: m Word32
   getPresentQueue :: m Queue
   getPresentQueueFamily :: m Word32
+  getSurfaceCapabilities :: m SurfaceCapabilitiesKHR
+  getSurfaceFormats :: m (Vector SurfaceFormatKHR)
+  getPresentModes :: m (Vector PresentModeKHR)
   getCommandPool :: m CommandPool
 
 instance MonadVulkan m => MonadVulkan (ReaderT r m) where
@@ -39,6 +44,9 @@ instance MonadVulkan m => MonadVulkan (ReaderT r m) where
   getGraphicsQueueFamily = lift getGraphicsQueueFamily
   getPresentQueue = lift getPresentQueue
   getPresentQueueFamily = lift getPresentQueueFamily
+  getSurfaceCapabilities = lift getSurfaceCapabilities
+  getSurfaceFormats = lift getSurfaceFormats
+  getPresentModes = lift getPresentModes
   getCommandPool = lift getCommandPool
 
 -- |References to all relevant Vulkan handles
@@ -52,6 +60,9 @@ data VulkanHandles = VulkanHandles
     vhGraphicsQueueFamily :: Word32,
     vhPresentQueue :: Queue,
     vhPresentQueueFamily :: Word32,
+    vhSurfaceCapabilities :: SurfaceCapabilitiesKHR,
+    vhSurfaceFormats :: Vector SurfaceFormatKHR,
+    vhPresentModes :: Vector PresentModeKHR,
     vhCommandPool :: CommandPool
   }
 
@@ -76,6 +87,9 @@ instance MonadVulkan Vulkan where
   getPresentQueue = Vulkan (asks vhPresentQueue)
   getGraphicsQueueFamily = Vulkan (asks vhGraphicsQueueFamily)
   getPresentQueueFamily = Vulkan (asks vhPresentQueueFamily)
+  getSurfaceCapabilities = Vulkan (asks vhSurfaceCapabilities)
+  getSurfaceFormats = Vulkan (asks vhSurfaceFormats)
+  getPresentModes = Vulkan (asks vhPresentModes)
   getCommandPool = Vulkan (asks vhCommandPool)
 
 instance MonadUnliftIO Vulkan where

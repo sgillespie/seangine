@@ -1,6 +1,5 @@
 module Graphics.Seangine.Monad.VulkanFrame
-  ( Frame(..),
-    MonadFrame(..),
+  ( MonadFrame(..),
     VulkanFrame(..),
     allocateVulkan,
     allocateVulkan_,
