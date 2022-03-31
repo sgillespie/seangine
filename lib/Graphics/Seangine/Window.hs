@@ -2,6 +2,7 @@ module Graphics.Seangine.Window
   (module SDL,
    withWindow,
    windowExts,
+   getDrawableSize,
    withWindowSurface,
    awaitWindowEvents,
    shouldQuit
@@ -12,7 +13,7 @@ import qualified Data.ByteString as B
 import Data.Text (pack)
 import qualified Data.Vector as V
 import SDL hiding (Vector)
-import SDL.Video.Vulkan (vkCreateSurface, vkGetInstanceExtensions)
+import SDL.Video.Vulkan (vkCreateSurface, vkGetDrawableSize, vkGetInstanceExtensions)
 import Vulkan.Core10 (Instance(..))
 import Vulkan.Extensions.VK_KHR_surface (SurfaceKHR(..), destroySurfaceKHR)
 
@@ -44,7 +45,12 @@ windowExts win = do
   exts' <- liftIO $ mapM B.packCString exts
 
   return $ V.fromList exts'
-          
+
+getDrawableSize :: (MonadIO m, Integral i) => Window -> m (i, i)
+getDrawableSize window = do
+  (V2 length width) <- vkGetDrawableSize window
+  return (fromIntegral length, fromIntegral width)
+    
 withWindowSurface
   :: MonadResource m
   => Instance

@@ -20,6 +20,6 @@ main = runResourceT $ do
   handles <- withVulkanInstance dataDir instance' surface
 
   runVulkan handles $ do
-    initialFrame <- withVulkanFrame surface
+    initialFrame <- withVulkanFrame win surface
     
     whileM (not . shouldQuit <$> awaitWindowEvents)

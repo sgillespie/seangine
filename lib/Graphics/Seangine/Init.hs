@@ -74,7 +74,7 @@ withVulkanInstance dataDir instance' surface = do
   gfxQueue <- getDeviceQueue device ppdGraphicsFamilyIndex 0
   presentQueue <- getDeviceQueue device ppdPresentFamilyIndex 0
   commandPool <- withCommandPool' device ppdGraphicsFamilyIndex
-  
+
   return VulkanHandles
     { vhDataDir = dataDir,
       vhInstance = instance',

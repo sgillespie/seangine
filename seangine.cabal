@@ -23,6 +23,7 @@ library
         Graphics.Seangine.Monad.Exception,
         Graphics.Seangine.Monad.Vulkan,
         Graphics.Seangine.Monad.VulkanFrame,
+        Graphics.Seangine.Swapchain,
         Graphics.Seangine.Window
     other-modules:
         Graphics.Seangine.Internal.PhysicalDeviceDetails
