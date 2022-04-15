@@ -16,21 +16,27 @@ library
         Graphics.Seangine,
         Graphics.Seangine.Domain,
         Graphics.Seangine.Domain.Frame,
-        Graphics.Seangine.GraphicsPipeline,
         Graphics.Seangine.Init,
         Graphics.Seangine.Monad,
         Graphics.Seangine.Monad.Cmd,
         Graphics.Seangine.Monad.Exception,
         Graphics.Seangine.Monad.Vulkan,
         Graphics.Seangine.Monad.VulkanFrame,
-        Graphics.Seangine.Swapchain,
+        Graphics.Seangine.Shaders,
+        Graphics.Seangine.Shaders.FragShader,
+        Graphics.Seangine.Shaders.VertexShader,
+        Graphics.Seangine.VulkanFrame,
         Graphics.Seangine.Window
     other-modules:
+        Graphics.Seangine.Internal.GraphicsPipelineDetails
+        Graphics.Seangine.Internal.SwapchainDetails
         Graphics.Seangine.Internal.PhysicalDeviceDetails
+        Graphics.Seangine.Internal.Utils
     build-depends:
         base ^>=4.14.3.0,
         bytestring,
         extra,
+        linear,
         resourcet,
         transformers,
         unliftio-core,

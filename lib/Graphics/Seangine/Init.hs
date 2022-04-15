@@ -2,6 +2,7 @@ module Graphics.Seangine.Init (withVulkanInstance, withInstance') where
 
 import Graphics.Seangine.Monad
 import Graphics.Seangine.Internal.PhysicalDeviceDetails
+import Graphics.Seangine.Internal.Utils (mresult)
 
 import Control.Monad.IO.Unlift (MonadIO(..))
 import Control.Monad.Trans.Resource (MonadResource(..), allocate)
@@ -10,15 +11,6 @@ import Vulkan.CStruct.Extends (SomeStruct(SomeStruct))
 import Vulkan.Core10
 import Vulkan.Core10.Enums.Result (Result(..))
 import Vulkan.Extensions.VK_EXT_debug_utils
-    ( DebugUtilsMessengerCreateInfoEXT(messageSeverity, messageType,
-                                       pfnUserCallback),
-      withDebugUtilsMessengerEXT,
-      DebugUtilsMessageSeverityFlagBitsEXT(DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
-                                           DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT,
-                                           DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT),
-      DebugUtilsMessageTypeFlagBitsEXT(DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-                                       DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT,
-                                       DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) )
 import Vulkan.Extensions.VK_KHR_surface
 import Vulkan.Extensions.VK_KHR_swapchain
 import Vulkan.Extensions.VK_KHR_shader_non_semantic_info
@@ -29,7 +21,7 @@ import VulkanMemoryAllocator (Allocator(..), AllocatorCreateInfo(..), withAlloca
 import qualified Data.ByteString as B
 import qualified Data.Vector as V
 
-import Control.Monad (forM, when)
+import Control.Monad
 import Control.Exception
 import Data.Bits ((.|.), Bits(..))
 import Data.Functor ((<&>))
@@ -146,23 +138,16 @@ getPhysicalDevices instance' surface = do
   allDevices <- forM devices $ \device -> do
     (graphicsQueueFamily, presentQueueFamily) <- getQueueFamilyIndices device surface
     surfaceCapabilities <- getPhysicalDeviceSurfaceCapabilitiesKHR device surface
-    (res, surfaceFormats) <- getPhysicalDeviceSurfaceFormatsKHR device surface
-    (res', presentModes) <- getPhysicalDeviceSurfacePresentModesKHR device surface
+    surfaceFormats <- mresult <$> getPhysicalDeviceSurfaceFormatsKHR device surface
+    presentModes <- mresult <$> getPhysicalDeviceSurfacePresentModesKHR device surface
 
-    let surfaceFormats' = case res of
-          SUCCESS -> surfaceFormats
-          _       -> []
-    let presentModes' = case res of
-          SUCCESS -> presentModes
-          _       -> []
-          
     return $ physicalDeviceDetails
         device
         graphicsQueueFamily
         presentQueueFamily
         surfaceCapabilities
-        surfaceFormats'
-        presentModes'
+        surfaceFormats
+        presentModes
 
   return $
     (V.map fromJust . V.filter isJust) allDevices

@@ -1,7 +1,7 @@
 module Main where
 
 import Graphics.Seangine
-import Graphics.Seangine.GraphicsPipeline (withVulkanFrame)
+import Graphics.Seangine.VulkanFrame (withVulkanFrame)
 import Graphics.Seangine.Monad (runVulkan)
 import Paths_seangine (getDataDir)
 

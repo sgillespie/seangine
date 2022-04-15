@@ -1,28 +1,50 @@
-module Graphics.Seangine.Swapchain (withSwapchain) where
+module Graphics.Seangine.Internal.SwapchainDetails
+  (SwapchainDetails(..),
+   withSwapchainDetails,
+   withImageView'
+  ) where
 
 import Graphics.Seangine.Monad
 import Graphics.Seangine.Window (Window(), getDrawableSize)
 
 import Control.Monad.Trans.Resource (allocate)
 import Vulkan.Core10
-import Vulkan.Extensions.VK_KHR_surface
 import Vulkan.Extensions.VK_KHR_swapchain
-import Vulkan.Zero (Zero(..))
+import Vulkan.Extensions.VK_KHR_surface (SurfaceCapabilitiesKHR(..), SurfaceFormatKHR(..))
+import Vulkan.Zero (zero)
 
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Reader (ask)
+import Control.Arrow ((>>>))
+import Data.Bits ((.&.))
+import Data.Maybe
 import Data.Word (Word32())
-import Data.Maybe (fromMaybe)
-import GHC.Clock (getMonotonicTime)
 import qualified Data.Vector as V
 
 -- constants
+preferredSurfaceFormat :: Format
 preferredSurfaceFormat = FORMAT_B8G8R8A8_SRGB
+
+preferredColorSpace :: ColorSpaceKHR
 preferredColorSpace = COLOR_SPACE_SRGB_NONLINEAR_KHR
+
+preferredPresentMode :: PresentModeKHR
 preferredPresentMode = PRESENT_MODE_FIFO_RELAXED_KHR
 
-withSwapchain :: Window -> SurfaceKHR -> Vulkan SwapchainKHR
-withSwapchain window surface = do
+preferredDepthFormats :: [Format]
+preferredDepthFormats
+  = [ FORMAT_D32_SFLOAT,
+      FORMAT_D32_SFLOAT_S8_UINT,
+      FORMAT_D24_UNORM_S8_UINT 
+    ]
+
+data SwapchainDetails = SwapchainDetails
+  { sdSwapchain :: SwapchainKHR,
+    sdExtent :: Extent2D,
+    sdSurfaceFormat :: Format,
+    sdDepthFormat :: Format
+  }
+
+withSwapchainDetails :: Window -> SurfaceKHR -> Vulkan SwapchainDetails
+withSwapchainDetails window surface = do
   device <- getDevice
   surfaceFormats <- getSurfaceFormats
   presentModes <- getPresentModes
@@ -36,6 +58,7 @@ withSwapchain window surface = do
       queueFamilies = chooseQueueFamilyIndices sharingMode graphicsFamily presentFamily
 
   swapExtent <- chooseSwapExtent window
+  depthFormat <- chooseDepthFormat
 
   let createInfo = zero
         { surface = surface,
@@ -55,7 +78,34 @@ withSwapchain window surface = do
 
   (_, swapchain) <- withSwapchainKHR device createInfo Nothing allocate
 
-  return swapchain
+  return SwapchainDetails
+    { sdSwapchain = swapchain,
+      sdExtent = swapExtent,
+      sdSurfaceFormat = format,
+      sdDepthFormat = depthFormat
+    }
+
+withImageView' :: Image -> Format -> ImageAspectFlags -> Vulkan ImageView
+withImageView' image format flags = do
+  device <- getDevice
+
+  let createInfo = zero
+        { image = image,
+          viewType = IMAGE_VIEW_TYPE_2D,
+          format = format,
+          components = zero,
+          subresourceRange = subresourceRange
+        }
+
+      subresourceRange = zero
+        { aspectMask = flags,
+          baseMipLevel = 0,
+          levelCount = 1,
+          baseArrayLayer = 0,
+          layerCount = 1
+        }
+
+  snd <$> withImageView device createInfo Nothing allocate
 
 chooseSurfaceFormat :: V.Vector SurfaceFormatKHR -> SurfaceFormatKHR
 chooseSurfaceFormat surfaceFormats
@@ -80,6 +130,29 @@ chooseSwapExtent window = do
   if width == maxBound && height == maxBound
       then windowExtent window
       else return currentExtent
+
+chooseDepthFormat :: Vulkan Format
+chooseDepthFormat = do
+  device <- getPhysicalDevice
+
+  allFormatProperties <-
+    mapM (getPhysicalDeviceFormatProperties device) preferredDepthFormats
+
+  let requiredFeature = FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+
+      isSuitableFormat (format, FormatProperties{..})
+        = optimalTilingFeatures .&. requiredFeature == requiredFeature
+
+      maybeDepthFormat
+        = ($ allFormatProperties)
+        $ zip preferredDepthFormats
+        >>> filter isSuitableFormat
+        >>> map fst
+        >>> listToMaybe
+
+  case maybeDepthFormat of
+    Nothing -> throwSystemError "Failed to find a supported format"
+    Just format -> return format
 
 chooseImageSharingMode :: Word32 -> Word32 -> SharingMode
 chooseImageSharingMode graphicsQueue presentQueue
