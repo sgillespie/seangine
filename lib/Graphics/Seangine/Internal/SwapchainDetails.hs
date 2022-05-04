@@ -5,7 +5,7 @@ module Graphics.Seangine.Internal.SwapchainDetails
   ) where
 
 import Graphics.Seangine.Monad
-import Graphics.Seangine.Window (Window(), getDrawableSize)
+import Graphics.Seangine.Window
 
 import Control.Monad.Trans.Resource (allocate)
 import Vulkan.Core10
@@ -43,7 +43,11 @@ data SwapchainDetails = SwapchainDetails
     sdDepthFormat :: Format
   }
 
-withSwapchainDetails :: Window -> SurfaceKHR -> Vulkan SwapchainDetails
+withSwapchainDetails
+  :: WindowSystem system
+  => Window system window
+  -> SurfaceKHR
+  -> Vulkan SwapchainDetails
 withSwapchainDetails window surface = do
   device <- getDevice
   surfaceFormats <- getSurfaceFormats
@@ -122,7 +126,7 @@ choosePresentMode presentModes
       PRESENT_MODE_FIFO_KHR
       (V.find (preferredPresentMode==) presentModes)
 
-chooseSwapExtent :: Window -> Vulkan Extent2D
+chooseSwapExtent :: WindowSystem system => Window system window -> Vulkan Extent2D
 chooseSwapExtent window = do
   SurfaceCapabilitiesKHR{currentExtent=currentExtent} <- getSurfaceCapabilities
   let (Extent2D width height) = currentExtent
@@ -164,5 +168,8 @@ chooseQueueFamilyIndices SHARING_MODE_CONCURRENT graphicsFamily presentFamily
   = [graphicsFamily, presentFamily]
 chooseQueueFamilyIndices SHARING_MODE_EXCLUSIVE _ _ = []
 
-windowExtent :: Window -> Vulkan Extent2D
-windowExtent window = uncurry Extent2D <$> getDrawableSize window
+windowExtent :: WindowSystem system => Window system window -> Vulkan Extent2D
+windowExtent window = do
+  (width, height) <- getDrawableSize window
+  return $ Extent2D (fromIntegral width) (fromIntegral height)
+

@@ -5,7 +5,7 @@ import Graphics.Seangine.Internal.GraphicsPipelineDetails
 import Graphics.Seangine.Internal.SwapchainDetails
 import Graphics.Seangine.Internal.Utils (throwIfUnsuccessful)
 import Graphics.Seangine.Monad
-import Graphics.Seangine.Window (Window())
+import Graphics.Seangine.Window
 
 import Control.Monad.Trans.Resource (allocate)
 import Vulkan.CStruct.Extends (SomeStruct(..))
@@ -21,7 +21,11 @@ import Data.Traversable (for)
 import GHC.Clock (getMonotonicTime)
 import qualified Data.Vector as V
 
-withVulkanFrame :: Window -> SurfaceKHR -> Vulkan Frame
+withVulkanFrame
+  :: WindowSystem system
+  => Window system window
+  -> SurfaceKHR
+  -> Vulkan Frame
 withVulkanFrame window surface = do
   device <- getDevice
   handles <- Vulkan ask

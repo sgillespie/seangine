@@ -26,7 +26,8 @@ library
         Graphics.Seangine.Shaders.FragShader,
         Graphics.Seangine.Shaders.VertexShader,
         Graphics.Seangine.VulkanFrame,
-        Graphics.Seangine.Window
+        Graphics.Seangine.Window,
+        Graphics.Seangine.Window.SDL
     other-modules:
         Graphics.Seangine.Internal.GraphicsPipelineDetails
         Graphics.Seangine.Internal.SwapchainDetails
@@ -51,10 +52,12 @@ library
         DerivingStrategies,
         DuplicateRecordFields,
         GeneralizedNewtypeDeriving,
+        LambdaCase,
         NumDecimals,
         OverloadedStrings,
         OverloadedLists,
-        RecordWildCards
+        RecordWildCards,
+        TypeFamilies
     hs-source-dirs:   lib
     default-language: Haskell2010
 
