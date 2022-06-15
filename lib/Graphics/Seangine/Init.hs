@@ -136,18 +136,18 @@ getPhysicalDevices instance' surface = do
   (_, devices) <- enumeratePhysicalDevices instance'
 
   allDevices <- forM devices $ \device -> do
-    (graphicsQueueFamily, presentQueueFamily) <- getQueueFamilyIndices device surface
-    surfaceCapabilities <- getPhysicalDeviceSurfaceCapabilitiesKHR device surface
-    surfaceFormats <- mresult <$> getPhysicalDeviceSurfaceFormatsKHR device surface
-    presentModes <- mresult <$> getPhysicalDeviceSurfacePresentModesKHR device surface
+    queueFamilyIndices <- getQueueFamilyIndices device surface
+    case queueFamilyIndices of
+      Nothing -> return Nothing
+      Just (graphicsQueueFamily, presentQueueFamily) -> do
+        surfaceCapabilities <- getPhysicalDeviceSurfaceCapabilitiesKHR device surface
+        surfaceFormats <- mresult <$> getPhysicalDeviceSurfaceFormatsKHR device surface
+        presentModes <- mresult <$> getPhysicalDeviceSurfacePresentModesKHR device surface
 
-    return $ physicalDeviceDetails
-        device
-        graphicsQueueFamily
-        presentQueueFamily
-        surfaceCapabilities
-        surfaceFormats
-        presentModes
+        physicalDeviceDetails device graphicsQueueFamily presentQueueFamily
+          <$> getPhysicalDeviceSurfaceCapabilitiesKHR device surface
+          <*> fmap mresult (getPhysicalDeviceSurfaceFormatsKHR device surface)
+          <*> fmap mresult (getPhysicalDeviceSurfacePresentModesKHR device surface)
 
   return $
     (V.map fromJust . V.filter isJust) allDevices
@@ -156,7 +156,7 @@ getQueueFamilyIndices
   :: MonadIO m
   => PhysicalDevice
   -> SurfaceKHR
-  -> m (Maybe Word32, Maybe Word32)
+  -> m (Maybe (Word32, Word32))
 getQueueFamilyIndices device surface = do
   families <- getPhysicalDeviceQueueFamilyProperties device
 
@@ -170,7 +170,9 @@ getQueueFamilyIndices device surface = do
   presentFamId <- fmap (fromIntegral . fst)
     <$> findM (isPresentFamily . fromIntegral . fst) indexedFamilies
 
-  return (graphicsFamId, presentFamId)
+  case (presentFamId, graphicsFamId) of
+    (Just presentFamId', Just graphicsFamId') -> return $ Just (presentFamId', graphicsFamId')
+    _ -> return Nothing
   
 withDevice'
   :: MonadResource m

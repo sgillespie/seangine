@@ -24,8 +24,8 @@ data PhysicalDeviceDetails = PhysicalDeviceDetails
 
 physicalDeviceDetails
   :: PhysicalDevice
-  -> Maybe Word32
-  -> Maybe Word32
+  -> Word32
+  -> Word32
   -> SurfaceCapabilitiesKHR
   -> V.Vector SurfaceFormatKHR
   -> V.Vector PresentModeKHR
@@ -39,15 +39,13 @@ physicalDeviceDetails
   presentModes
   =
   do
-    graphicsFamilyQueue' <- graphicsFamilyQueue
-    presentFamilyQueue' <- presentFamilyQueue
     surfaceFormats' <- nonemptyList surfaceFormats
     presentModes' <- nonemptyList presentModes
     
     Just $ PhysicalDeviceDetails
       { ppdPhysicalDevice = device,
-        ppdGraphicsFamilyIndex = graphicsFamilyQueue',
-        ppdPresentFamilyIndex = presentFamilyQueue',
+        ppdGraphicsFamilyIndex = graphicsFamilyQueue,
+        ppdPresentFamilyIndex = presentFamilyQueue,
         ppdSurfaceCapabilities = surfaceCapabilities,
         ppdSurfaceFormats = surfaceFormats',
         ppdPresentModes = presentModes'
