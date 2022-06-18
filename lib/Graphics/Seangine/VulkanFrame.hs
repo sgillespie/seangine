@@ -35,6 +35,7 @@ withVulkanFrame window surface = do
   swapchainDetails@SwapchainDetails{..} <- withSwapchainDetails window surface
   imageViews <- withImageViews swapchainDetails
   GraphicsPipelineDetails{..} <- withGraphicsPipelineDetails swapchainDetails
+  framebuffers <- withFramebuffers imageViews renderPass sdExtent
   
   return Frame
     { fIndex = 0,
@@ -43,7 +44,7 @@ withVulkanFrame window surface = do
       fSwapchain = sdSwapchain,
       fImageExtent = sdExtent,
       fRenderPass = renderPass,
-      fFramebuffers = undefined,
+      fFramebuffers = framebuffers,
       fPipelineLayout = pipelineLayout,
       fGraphicsPipeline = graphicsPipeline,
       fImageAvailable = undefined,
@@ -65,3 +66,25 @@ withImageViews SwapchainDetails{..} = do
   
   for images $ \image ->
     withImageView' image sdSurfaceFormat IMAGE_ASPECT_COLOR_BIT
+
+withFramebuffers
+  :: V.Vector ImageView
+  -> RenderPass
+  -> Extent2D
+  -> Vulkan (V.Vector Framebuffer)
+withFramebuffers imageViews renderPass imageExtent = do
+  device <- getDevice
+
+  let framebufferCreateInfo :: ImageView -> FramebufferCreateInfo '[]
+      framebufferCreateInfo imageView = zero
+        { attachments = [imageView], -- TODO[sgillespie]: Add a depth image view
+          renderPass = renderPass,
+          width = imageWidth,
+          height = imageHeight,
+          layers = 1
+        }
+
+      (Extent2D imageWidth imageHeight) = imageExtent
+
+  for imageViews $ \imageView ->
+    snd <$> withFramebuffer device (framebufferCreateInfo imageView) Nothing allocate
