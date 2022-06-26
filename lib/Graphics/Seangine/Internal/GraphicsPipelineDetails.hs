@@ -106,7 +106,9 @@ withRenderPass' colorFormat depthFormat = do
         }
 
       subpassDependency = zero
-        { srcStageMask
+        { srcSubpass = SUBPASS_EXTERNAL,
+          dstSubpass = 0,
+          srcStageMask
             = PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
               .|. PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
           dstStageMask

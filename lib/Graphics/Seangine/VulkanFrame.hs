@@ -7,18 +7,18 @@ import Graphics.Seangine.Internal.Utils (throwIfUnsuccessful)
 import Graphics.Seangine.Monad
 import Graphics.Seangine.Window
 
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Reader (ask)
 import Control.Monad.Trans.Resource (allocate)
+import Data.Bits
+import Data.Traversable (for)
+import GHC.Clock (getMonotonicTime)
 import Vulkan.CStruct.Extends (SomeStruct(..))
 import Vulkan.Core10
 import Vulkan.Extensions.VK_KHR_surface (SurfaceKHR())
 import Vulkan.Extensions.VK_KHR_swapchain
 import Vulkan.Zero (Zero(..))
-
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Reader (ask)
-import Data.Bits
-import Data.Traversable (for)
-import GHC.Clock (getMonotonicTime)
+import qualified VulkanMemoryAllocator as VMA
 import qualified Data.Vector as V
 
 withVulkanFrame
@@ -32,10 +32,12 @@ withVulkanFrame window surface = do
   allocator <- getAllocator
 
   start <- liftIO getMonotonicTime
+  
   swapchainDetails@SwapchainDetails{..} <- withSwapchainDetails window surface
   imageViews <- withImageViews swapchainDetails
   GraphicsPipelineDetails{..} <- withGraphicsPipelineDetails swapchainDetails
-  framebuffers <- withFramebuffers imageViews renderPass sdExtent
+  depthImageView <- withDepthImageView swapchainDetails
+  framebuffers <- withFramebuffers imageViews depthImageView renderPass sdExtent
   
   return Frame
     { fIndex = 0,
@@ -69,15 +71,16 @@ withImageViews SwapchainDetails{..} = do
 
 withFramebuffers
   :: V.Vector ImageView
+  -> ImageView
   -> RenderPass
   -> Extent2D
   -> Vulkan (V.Vector Framebuffer)
-withFramebuffers imageViews renderPass imageExtent = do
+withFramebuffers imageViews depthImageView renderPass imageExtent = do
   device <- getDevice
 
   let framebufferCreateInfo :: ImageView -> FramebufferCreateInfo '[]
       framebufferCreateInfo imageView = zero
-        { attachments = [imageView], -- TODO[sgillespie]: Add a depth image view
+        { attachments = [imageView, depthImageView],
           renderPass = renderPass,
           width = imageWidth,
           height = imageHeight,
@@ -88,3 +91,34 @@ withFramebuffers imageViews renderPass imageExtent = do
 
   for imageViews $ \imageView ->
     snd <$> withFramebuffer device (framebufferCreateInfo imageView) Nothing allocate
+withDepthImageView :: SwapchainDetails -> Vulkan ImageView
+withDepthImageView swapchain@SwapchainDetails{..} = do
+  depthImage <- withDepthImage swapchain
+  withImageView' depthImage sdDepthFormat IMAGE_ASPECT_DEPTH_BIT
+
+withDepthImage :: SwapchainDetails -> Vulkan Image
+withDepthImage SwapchainDetails{..} = do
+  allocator <- getAllocator
+  device <- getDevice
+  
+  let (Extent2D width height) = sdExtent
+      imageCreateInfo = zero
+        { format = sdDepthFormat,
+          imageType = IMAGE_TYPE_2D,
+          extent = Extent3D width height 1,
+          mipLevels = 1,
+          arrayLayers = 1,
+          samples = SAMPLE_COUNT_1_BIT,
+          tiling = IMAGE_TILING_OPTIMAL,
+          usage = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+          sharingMode = SHARING_MODE_EXCLUSIVE
+        }
+
+      allocateCreateInfo = zero
+        { VMA.requiredFlags = MEMORY_PROPERTY_DEVICE_LOCAL_BIT }
+  
+  (_, createImageResult) <-
+    VMA.withImage allocator imageCreateInfo allocateCreateInfo allocate
+  let (depthImage, _, _) = createImageResult
+
+  return depthImage
