@@ -38,6 +38,7 @@ withVulkanFrame window surface = do
   GraphicsPipelineDetails{..} <- withGraphicsPipelineDetails swapchainDetails
   depthImageView <- withDepthImageView swapchainDetails
   framebuffers <- withFramebuffers imageViews depthImageView renderPass sdExtent
+  (imageAvailable, renderFinished) <- withSemaphores
   
   return Frame
     { fIndex = 0,
@@ -49,8 +50,8 @@ withVulkanFrame window surface = do
       fFramebuffers = framebuffers,
       fPipelineLayout = pipelineLayout,
       fGraphicsPipeline = graphicsPipeline,
-      fImageAvailable = undefined,
-      fRenderFinished = undefined,
+      fImageAvailable = imageAvailable,
+      fRenderFinished = renderFinished,
       fVertexBuffer = undefined,
       fIndexBuffer = undefined,
       fUniformBuffers = undefined,
@@ -91,10 +92,18 @@ withFramebuffers imageViews depthImageView renderPass imageExtent = do
 
   for imageViews $ \imageView ->
     snd <$> withFramebuffer device (framebufferCreateInfo imageView) Nothing allocate
+
 withDepthImageView :: SwapchainDetails -> Vulkan ImageView
 withDepthImageView swapchain@SwapchainDetails{..} = do
   depthImage <- withDepthImage swapchain
   withImageView' depthImage sdDepthFormat IMAGE_ASPECT_DEPTH_BIT
+
+withSemaphores :: Vulkan (Semaphore, Semaphore)
+withSemaphores = do
+  device <- getDevice
+
+  let withSemaphore' createInfo = snd <$> withSemaphore device createInfo Nothing allocate
+  (,) <$> withSemaphore' zero <*> withSemaphore' zero
 
 withDepthImage :: SwapchainDetails -> Vulkan Image
 withDepthImage SwapchainDetails{..} = do
