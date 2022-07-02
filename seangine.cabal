@@ -16,6 +16,7 @@ library
         Graphics.Seangine,
         Graphics.Seangine.Domain,
         Graphics.Seangine.Domain.Frame,
+        Graphics.Seangine.Domain.Vertex,
         Graphics.Seangine.Init,
         Graphics.Seangine.Monad,
         Graphics.Seangine.Monad.Cmd,

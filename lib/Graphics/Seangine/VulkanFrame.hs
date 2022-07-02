@@ -39,6 +39,7 @@ withVulkanFrame window surface = do
   depthImageView <- withDepthImageView swapchainDetails
   framebuffers <- withFramebuffers imageViews depthImageView renderPass sdExtent
   (imageAvailable, renderFinished) <- withSemaphores
+  vertexBuffer <- withVertexBuffer
   
   return Frame
     { fIndex = 0,
@@ -103,7 +104,11 @@ withSemaphores = do
   device <- getDevice
 
   let withSemaphore' createInfo = snd <$> withSemaphore device createInfo Nothing allocate
-  (,) <$> withSemaphore' zero <*> withSemaphore' zero
+
+  imageAvailable <- withSemaphore' zero
+  renderFinished <- withSemaphore' zero
+
+  return (imageAvailable, renderFinished)
 
 withDepthImage :: SwapchainDetails -> Vulkan Image
 withDepthImage SwapchainDetails{..} = do
@@ -131,3 +136,10 @@ withDepthImage SwapchainDetails{..} = do
   let (depthImage, _, _) = createImageResult
 
   return depthImage
+
+withVertexBuffer :: Vulkan Buffer
+withVertexBuffer = do
+  allocator <- getAllocator
+
+  undefined
+  
