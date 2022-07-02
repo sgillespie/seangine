@@ -29,6 +29,7 @@ library
         Graphics.Seangine.Window,
         Graphics.Seangine.Window.SDL
     other-modules:
+        Graphics.Seangine.Internal.BufferDetails
         Graphics.Seangine.Internal.GraphicsPipelineDetails
         Graphics.Seangine.Internal.SwapchainDetails
         Graphics.Seangine.Internal.PhysicalDeviceDetails
