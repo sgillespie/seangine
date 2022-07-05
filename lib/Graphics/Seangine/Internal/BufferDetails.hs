@@ -1,6 +1,7 @@
 module Graphics.Seangine.Internal.BufferDetails
   ( BufferDetails(..),
     withBufferDetails,
+    withDeviceLocalBuffer,
     copyBuffer,
     copyBufferToImage,
     pokeArrayToBuffer,
@@ -11,6 +12,7 @@ import Graphics.Seangine.Monad
 
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Trans.Resource
+import Data.Bits ((.|.))
 import Data.Word (Word32())
 import Foreign.Marshal.Array (pokeArray)
 import Foreign.Ptr (castPtr)
@@ -50,6 +52,32 @@ withBufferDetails bufferSize bufferUsageFlags requiredMemoryFlags = do
 
   return $ BufferDetails buffer releaseKey allocation
 
+-- Create a device-local buffer and copy data to it through a staging buffer
+withDeviceLocalBuffer
+  :: Storable storable
+  => DeviceSize
+  -> BufferUsageFlags
+  -> [storable]
+  -> Vulkan BufferDetails
+withDeviceLocalBuffer bufferSize bufferUsageFlags data' = do
+  allocator <- getAllocator
+
+  let stageUsage = BUFFER_USAGE_TRANSFER_SRC_BIT
+      stageFlags = MEMORY_PROPERTY_HOST_VISIBLE_BIT .|. MEMORY_PROPERTY_HOST_COHERENT_BIT
+      indexUsage = BUFFER_USAGE_TRANSFER_DST_BIT .|. bufferUsageFlags
+      indexFlags = MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+  
+  -- Create a staging buffer
+  stagingBuffer <- withBufferDetails bufferSize stageUsage stageFlags
+  pokeArrayToBuffer stagingBuffer data'
+
+  -- Copy over to the vertex buffer
+  buffer <- withBufferDetails bufferSize indexUsage indexFlags
+  copyBuffer stagingBuffer buffer bufferSize
+
+  return buffer
+
+  
 copyBuffer
   :: BufferDetails
   -> BufferDetails

@@ -61,6 +61,7 @@ withVulkanFrame window surface = do
   framebuffers <- withFramebuffers imageViews depthImageView renderPass sdExtent
   (imageAvailable, renderFinished) <- withSemaphores
   vertexBuffer <- withVertexBuffer
+  indexBuffer <- withIndexBuffer
   
   return Frame
     { fIndex = 0,
@@ -74,8 +75,8 @@ withVulkanFrame window surface = do
       fGraphicsPipeline = graphicsPipeline,
       fImageAvailable = imageAvailable,
       fRenderFinished = renderFinished,
-      fVertexBuffer = undefined,
-      fIndexBuffer = undefined,
+      fVertexBuffer = vertexBuffer,
+      fIndexBuffer = indexBuffer,
       fUniformBuffers = undefined,
       fDescriptorSets = undefined,
       fResources = undefined,
@@ -160,20 +161,14 @@ withDepthImage SwapchainDetails{..} = do
 
 withVertexBuffer :: Vulkan Buffer
 withVertexBuffer = do
-  allocator <- getAllocator
-  
   let bufferSize = fromIntegral $ sizeOf (zero :: Vertex) * length vertices
-      stageUsage = BUFFER_USAGE_TRANSFER_SRC_BIT
-      stageFlags = MEMORY_PROPERTY_HOST_VISIBLE_BIT .|. MEMORY_PROPERTY_HOST_COHERENT_BIT
-      vertexUsage = BUFFER_USAGE_TRANSFER_DST_BIT .|. BUFFER_USAGE_VERTEX_BUFFER_BIT
-      vertexFlags = MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+      usageFlags = BUFFER_USAGE_VERTEX_BUFFER_BIT
 
-  -- Create a staging buffer
-  stagingBuffer <- withBufferDetails bufferSize stageUsage stageFlags
-  pokeArrayToBuffer stagingBuffer vertices
+  bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags vertices
 
-  -- Copy over to the vertex buffer
-  vertexBuffer <- withBufferDetails bufferSize vertexUsage vertexFlags
-  copyBuffer stagingBuffer vertexBuffer bufferSize
-
-  return $ bdBuffer vertexBuffer
+withIndexBuffer :: Vulkan Buffer
+withIndexBuffer = do
+  let bufferSize = fromIntegral $ sizeOf (undefined :: CUShort) * length vertexIndices
+      usageFlags = BUFFER_USAGE_INDEX_BUFFER_BIT
+  
+  bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags vertexIndices

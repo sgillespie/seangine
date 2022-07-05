@@ -7,7 +7,7 @@ import Graphics.Seangine.Monad.Vulkan (MonadVulkan(..), Vulkan(..))
 import Graphics.Seangine.Shaders (fragShaderCode, vertexShaderCode)
 
 import Control.Monad.Trans.Resource (allocate)
-import Vulkan.CStruct.Extends
+import Vulkan.CStruct.Extends (SomeStruct(..))
 import Vulkan.Core10
 import Vulkan.Zero (Zero(..))
 
