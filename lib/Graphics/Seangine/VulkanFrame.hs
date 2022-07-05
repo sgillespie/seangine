@@ -1,6 +1,7 @@
 module Graphics.Seangine.VulkanFrame (withVulkanFrame) where
 
-import Graphics.Seangine.Domain (Frame(..))
+import Graphics.Seangine.Domain (Frame(..), Vertex(..))
+import Graphics.Seangine.Internal.BufferDetails
 import Graphics.Seangine.Internal.GraphicsPipelineDetails
 import Graphics.Seangine.Internal.SwapchainDetails
 import Graphics.Seangine.Internal.Utils (throwIfUnsuccessful)
@@ -9,10 +10,15 @@ import Graphics.Seangine.Window
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Reader (ask)
-import Control.Monad.Trans.Resource (allocate)
+import Control.Monad.Trans.Resource (allocate, release)
 import Data.Bits
 import Data.Traversable (for)
+import Foreign.Marshal.Array (pokeArray)
+import Foreign.C.Types (CUShort())
+import Foreign.Storable (Storable(..))
+import Foreign.Ptr (castPtr)
 import GHC.Clock (getMonotonicTime)
+import Linear (V2(..), V3(..))
 import Vulkan.CStruct.Extends (SomeStruct(..))
 import Vulkan.Core10
 import Vulkan.Extensions.VK_KHR_surface (SurfaceKHR())
@@ -20,6 +26,21 @@ import Vulkan.Extensions.VK_KHR_swapchain
 import Vulkan.Zero (Zero(..))
 import qualified VulkanMemoryAllocator as VMA
 import qualified Data.Vector as V
+
+vertices :: [Vertex]
+vertices
+  = [ Vertex (V3 (-0.5) (-0.5) 0) (V3 1 0 0) (V2 1 0),
+      Vertex (V3   0.5  (-0.5) 0) (V3 0 1 0) (V2 0 0),
+      Vertex (V3   0.5    0.5  0) (V3 0 0 1) (V2 0 1),
+      Vertex (V3 (-0.5)   0.5  0) (V3 1 1 1) (V2 1 1)
+    ]
+
+vertexIndices :: [CUShort]
+vertexIndices
+  = [ 0, 1,
+      2, 2,
+      3, 0
+    ]
 
 withVulkanFrame
   :: WindowSystem system
@@ -140,6 +161,19 @@ withDepthImage SwapchainDetails{..} = do
 withVertexBuffer :: Vulkan Buffer
 withVertexBuffer = do
   allocator <- getAllocator
-
-  undefined
   
+  let bufferSize = fromIntegral $ sizeOf (zero :: Vertex) * length vertices
+      stageUsage = BUFFER_USAGE_TRANSFER_SRC_BIT
+      stageFlags = MEMORY_PROPERTY_HOST_VISIBLE_BIT .|. MEMORY_PROPERTY_HOST_COHERENT_BIT
+      vertexUsage = BUFFER_USAGE_TRANSFER_DST_BIT .|. BUFFER_USAGE_VERTEX_BUFFER_BIT
+      vertexFlags = MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+
+  -- Create a staging buffer
+  stagingBuffer <- withBufferDetails bufferSize stageUsage stageFlags
+  pokeArrayToBuffer stagingBuffer vertices
+
+  -- Copy over to the vertex buffer
+  vertexBuffer <- withBufferDetails bufferSize vertexUsage vertexFlags
+  copyBuffer stagingBuffer vertexBuffer bufferSize
+
+  return $ bdBuffer vertexBuffer

@@ -1,15 +1,20 @@
 module Graphics.Seangine.Internal.BufferDetails
-  ( withBufferDetails,
+  ( BufferDetails(..),
+    withBufferDetails,
     copyBuffer,
     copyBufferToImage,
+    pokeArrayToBuffer,
     withOneTimeCommands
   ) where
 
 import Graphics.Seangine.Monad
 
-import Control.Monad.IO.Class (MonadIO())
+import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Trans.Resource
 import Data.Word (Word32())
+import Foreign.Marshal.Array (pokeArray)
+import Foreign.Ptr (castPtr)
+import Foreign.Storable (Storable(..))
 import Vulkan.CStruct.Extends (SomeStruct(..))
 import Vulkan.Core10
 import Vulkan.Zero
@@ -18,9 +23,9 @@ import qualified Data.Vector as V
 import qualified VulkanMemoryAllocator as VMA
 
 data BufferDetails = BufferDetails
-  { buffer :: Buffer,
-    bufferReleaseKey :: ReleaseKey,
-    bufferAllocation :: Allocation
+  { bdBuffer :: Buffer,
+    bdReleaseKey :: ReleaseKey,
+    bdAllocation :: Allocation
   }
 
 withBufferDetails
@@ -28,11 +33,16 @@ withBufferDetails
   -> BufferUsageFlags
   -> MemoryPropertyFlags
   -> Vulkan BufferDetails
-withBufferDetails deviceSize bufferUsageFlags memoryPropertyFlags = do
+withBufferDetails bufferSize bufferUsageFlags requiredMemoryFlags = do
   allocator <- getAllocator
   
   let bufferCreateInfo = zero
+        { size = bufferSize,
+          usage = bufferUsageFlags,
+          sharingMode = SHARING_MODE_EXCLUSIVE
+        }
       allocationCreateInfo = zero
+        { VMA.requiredFlags = requiredMemoryFlags }
 
   (releaseKey, bufferCreateResult) <-
     VMA.withBuffer allocator bufferCreateInfo allocationCreateInfo allocate
@@ -41,17 +51,20 @@ withBufferDetails deviceSize bufferUsageFlags memoryPropertyFlags = do
   return $ BufferDetails buffer releaseKey allocation
 
 copyBuffer
-  :: Buffer
-  -> Buffer
+  :: BufferDetails
+  -> BufferDetails
   -> DeviceSize
   -> Vulkan ()
-copyBuffer srcBuffer destBuffer deviceSize = withOneTimeCommands $ do
+copyBuffer srcBuffer dstBuffer deviceSize = withOneTimeCommands $ do
   commandBuffer <- getCommandBuffer
 
   let bufferCopy :: BufferCopy
       bufferCopy = zero { size = deviceSize }
 
-  cmdCopyBuffer commandBuffer srcBuffer destBuffer [bufferCopy]
+      BufferDetails { bdBuffer = src } = srcBuffer
+      BufferDetails { bdBuffer = dest } = dstBuffer
+
+  cmdCopyBuffer commandBuffer src dest [bufferCopy]
 
 copyBufferToImage
   :: Buffer
@@ -82,9 +95,21 @@ copyBufferToImage buffer image width height = withOneTimeCommands $ do
     imageLayout
     [bufferImageCopy]
 
+pokeArrayToBuffer
+  :: Storable storable
+  => BufferDetails
+  -> [storable]
+  -> Vulkan ()
+pokeArrayToBuffer BufferDetails{..} data' = do
+  allocator <- getAllocator
+  
+  (releaseStagingMemory, stagingMemory) <-
+    VMA.withMappedMemory allocator bdAllocation allocate
+  liftIO $ pokeArray (castPtr stagingMemory) data'
+  release releaseStagingMemory
+
 withOneTimeCommands :: CmdT Vulkan a -> Vulkan a
 withOneTimeCommands commands = do
-  commandPool <- getCommandPool
   device <- getDevice
   graphicsQueue <- getGraphicsQueue
 
@@ -92,16 +117,19 @@ withOneTimeCommands commands = do
   result <- recordOneTimeCommandBuffer commandBuffer commands
   submitOneTimeCommandBuffer commandBuffer
 
+  queueWaitIdle graphicsQueue
   release releaseCommandBuffer
   return result
 
 withOneTimeCommandBuffer :: Vulkan (ReleaseKey, CommandBuffer)
 withOneTimeCommandBuffer = do
+  commandPool <- getCommandPool
   device <- getDevice
 
   let commandBufferInfo = zero
         { level = COMMAND_BUFFER_LEVEL_PRIMARY,
-          commandBufferCount = 1
+          commandBufferCount = 1,
+          commandPool = commandPool
         }
   
   (releaseKey, commandBuffers) <- withCommandBuffers device commandBufferInfo allocate

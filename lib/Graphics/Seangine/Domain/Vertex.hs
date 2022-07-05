@@ -1,10 +1,13 @@
+{-# LANGUAGE ExistentialQuantification #-}
 module Graphics.Seangine.Domain.Vertex
- (Vertex(..)) where
+ ( Vertex(..),
+   vertexAttributeDescriptions
+ ) where
 
 import Foreign.Ptr
 import Foreign.Storable (Storable(..))
 import Linear (V2(..), V3(..))
-import Vulkan.Core10 hiding (alignment)
+import Vulkan.Core10 hiding (alignment, vertexAttributeDescriptions)
 import Vulkan.Zero (Zero(..))
 
 data Vertex = Vertex
@@ -23,11 +26,7 @@ instance Zero zero => Zero (V3 zero) where
   zero = V3 zero zero zero
 
 instance Storable Vertex where
-  sizeOf _
-    = sizeOf (zero :: V3 Float)
-      + sizeOf (zero :: V3 Float)
-      + sizeOf (zero :: V2 Float)
-
+  sizeOf _ = calculateOffset [zeroV3, zeroV3, zeroV2]
   alignment _ = alignment (zero :: Float)
 
   peek ptr = Vertex <$> peek v3Ptr <*> peek v3Ptr <*> peek v2Ptr
@@ -36,8 +35,8 @@ instance Storable Vertex where
 
   poke ptr (Vertex position color textureCoordinate)
     = poke ptr' position
-    >> pokeByteOff ptr' (calculateOffset [position]) color
-    >> pokeByteOff ptr' (calculateOffset [position, color]) textureCoordinate
+    >> pokeByteOff ptr' (calculateOffset [zeroV3]) color
+    >> pokeByteOff ptr' (calculateOffset [zeroV3, zeroV3]) textureCoordinate
     where ptr' = castPtr ptr
           
 
@@ -54,14 +53,14 @@ vertexAttributeDescriptions
        { location = 1,
          binding = 0,
          format = FORMAT_R32G32B32_SFLOAT,
-         offset = fromIntegral $ calculateOffset [dummyV3]
+         offset = fromIntegral $ calculateOffset [zeroV3]
        },
 
       VertexInputAttributeDescription
        { location = 2,
          binding = 0,
          format = FORMAT_R32G32_SFLOAT,
-         offset = fromIntegral $ calculateOffset [dummyV3, dummyV3]
+         offset = fromIntegral $ calculateOffset [zeroV3, zeroV3]
        }
     ]
 
@@ -69,4 +68,15 @@ vertexAttributeDescriptions
         formatv2 = FORMAT_R32G32_SFLOAT
         dummyV3 = zero :: V3 Float
 
-calculateOffset values = sum $ map sizeOf values
+calculateOffset :: [EStorable] -> Int
+calculateOffset values = sum $ flip map values
+  $ \(EStorable s) -> sizeOf s
+                                                         
+
+data EStorable = forall s. Storable s => EStorable { unEStorable :: s }
+
+zeroV2 :: EStorable
+zeroV2 = EStorable (zero :: V2 Float)
+
+zeroV3 :: EStorable
+zeroV3 = EStorable (zero :: V3 Float)
