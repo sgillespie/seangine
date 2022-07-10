@@ -12,7 +12,7 @@ import Graphics.Seangine.Window
 import Control.Monad (forM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Reader (ask)
-import Control.Monad.Trans.Resource (allocate, release)
+import Control.Monad.Trans.Resource
 import Data.Bits
 import Data.Traversable (for)
 import Data.Word (Word32())
@@ -66,9 +66,11 @@ withVulkanFrame window surface = do
   vertexBuffer <- withVertexBuffer
   indexBuffer <- withIndexBuffer
   uniformBuffers <- withUniformBuffer imageViews
-
+  resources <- allocate createInternalState closeInternalState
   descriptorSets <-
     withDescriptorSets' imageViews (V.map fst uniformBuffers) descriptorSetLayout
+  fence <- withFence'
+    
   
   return Frame
     { fIndex = 0,
@@ -86,7 +88,7 @@ withVulkanFrame window surface = do
       fIndexBuffer = indexBuffer,
       fUniformBuffers = uniformBuffers,
       fDescriptorSets = (descriptorSets V.!) . fromIntegral, 
-      fResources = undefined,
+      fResources = resources,
       fGpuWork = undefined
     }
 
@@ -191,3 +193,9 @@ withUniformBuffer imageViews = do
   forM imageViews $ \_ -> do
     BufferDetails{..} <- withBufferDetails bufferSize usageFlags memoryFlags
     return (bdBuffer, bdAllocation)
+
+withFence' :: Vulkan Fence
+withFence' = do
+  device <- getDevice
+
+  snd <$> withFence device zero Nothing allocate
