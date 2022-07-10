@@ -1,18 +1,21 @@
 module Graphics.Seangine.VulkanFrame (withVulkanFrame) where
 
-import Graphics.Seangine.Domain (Frame(..), Vertex(..))
+import Graphics.Seangine.Domain
 import Graphics.Seangine.Internal.BufferDetails
+import Graphics.Seangine.Internal.DescriptorSets (withDescriptorSets')
 import Graphics.Seangine.Internal.GraphicsPipelineDetails
 import Graphics.Seangine.Internal.SwapchainDetails
 import Graphics.Seangine.Internal.Utils (throwIfUnsuccessful)
 import Graphics.Seangine.Monad
 import Graphics.Seangine.Window
 
+import Control.Monad (forM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Reader (ask)
 import Control.Monad.Trans.Resource (allocate, release)
 import Data.Bits
 import Data.Traversable (for)
+import Data.Word (Word32())
 import Foreign.Marshal.Array (pokeArray)
 import Foreign.C.Types (CUShort())
 import Foreign.Storable (Storable(..))
@@ -62,6 +65,10 @@ withVulkanFrame window surface = do
   (imageAvailable, renderFinished) <- withSemaphores
   vertexBuffer <- withVertexBuffer
   indexBuffer <- withIndexBuffer
+  uniformBuffers <- withUniformBuffer imageViews
+
+  descriptorSets <-
+    withDescriptorSets' imageViews (V.map fst uniformBuffers) descriptorSetLayout
   
   return Frame
     { fIndex = 0,
@@ -77,8 +84,8 @@ withVulkanFrame window surface = do
       fRenderFinished = renderFinished,
       fVertexBuffer = vertexBuffer,
       fIndexBuffer = indexBuffer,
-      fUniformBuffers = undefined,
-      fDescriptorSets = undefined,
+      fUniformBuffers = uniformBuffers,
+      fDescriptorSets = (descriptorSets V.!) . fromIntegral, 
       fResources = undefined,
       fGpuWork = undefined
     }
@@ -172,3 +179,15 @@ withIndexBuffer = do
       usageFlags = BUFFER_USAGE_INDEX_BUFFER_BIT
   
   bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags vertexIndices
+
+withUniformBuffer :: V.Vector ImageView -> Vulkan (V.Vector (Buffer, VMA.Allocation))
+withUniformBuffer imageViews = do
+  allocator <- getAllocator
+
+  let bufferSize = fromIntegral $ sizeOf (zero :: UniformBufferObject)
+      usageFlags = BUFFER_USAGE_UNIFORM_BUFFER_BIT
+      memoryFlags = MEMORY_PROPERTY_HOST_VISIBLE_BIT .|. MEMORY_PROPERTY_HOST_COHERENT_BIT
+
+  forM imageViews $ \_ -> do
+    BufferDetails{..} <- withBufferDetails bufferSize usageFlags memoryFlags
+    return (bdBuffer, bdAllocation)

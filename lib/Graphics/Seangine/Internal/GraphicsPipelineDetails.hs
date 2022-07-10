@@ -39,7 +39,7 @@ withDescriptorSetLayout' :: Vulkan DescriptorSetLayout
 withDescriptorSetLayout' = do
   device <- getDevice
   let createInfo = zero
-        { bindings = [uniformLayoutBinding, samplerLayoutBinding] }
+        { bindings = [uniformLayoutBinding] }
 
       uniformLayoutBinding = zero
         { binding = 0,
@@ -48,13 +48,6 @@ withDescriptorSetLayout' = do
           stageFlags = SHADER_STAGE_VERTEX_BIT
         }
 
-      samplerLayoutBinding = zero
-        { binding = 1,
-          descriptorType = DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-          descriptorCount = 1,
-          stageFlags = SHADER_STAGE_FRAGMENT_BIT
-        }
-  
   snd <$> withDescriptorSetLayout device createInfo Nothing allocate
 
 withPipelineLayout' :: DescriptorSetLayout -> Vulkan PipelineLayout
