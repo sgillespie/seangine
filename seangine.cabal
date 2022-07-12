@@ -24,6 +24,7 @@ library
         Graphics.Seangine.Monad.Exception,
         Graphics.Seangine.Monad.Vulkan,
         Graphics.Seangine.Monad.VulkanFrame,
+        Graphics.Seangine.Render,
         Graphics.Seangine.Shaders,
         Graphics.Seangine.Shaders.FragShader,
         Graphics.Seangine.Shaders.VertexShader,
@@ -71,7 +72,20 @@ executable seangine
         base ^>=4.14.3.0,
         extra,
         resourcet,
-        seangine
+        seangine,
+        vector,
+        vulkan
+    default-extensions:
+        DataKinds,
+        DerivingStrategies,
+        DuplicateRecordFields,
+        GeneralizedNewtypeDeriving,
+        LambdaCase,
+        NumDecimals,
+        OverloadedStrings,
+        OverloadedLists,
+        RecordWildCards,
+        TypeFamilies
     hs-source-dirs:   app
     default-language: Haskell2010
     other-modules:

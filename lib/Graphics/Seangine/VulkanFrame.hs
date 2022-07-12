@@ -1,4 +1,9 @@
-module Graphics.Seangine.VulkanFrame (withVulkanFrame) where
+module Graphics.Seangine.VulkanFrame
+  ( withVulkanFrame,
+    withCommandBuffers',
+    vertices,
+    vertexIndices
+  ) where
 
 import Graphics.Seangine.Domain
 import Graphics.Seangine.Internal.BufferDetails
@@ -91,6 +96,19 @@ withVulkanFrame window surface = do
       fResources = resources,
       fGpuWork = undefined
     }
+
+withCommandBuffers' :: Frame -> Vulkan (V.Vector CommandBuffer)
+withCommandBuffers' Frame{..} = do
+  commandPool <- getCommandPool
+  device <- getDevice
+
+  let commandBufferAllocateInfo = zero
+        { commandPool = commandPool,
+          level = COMMAND_BUFFER_LEVEL_PRIMARY,
+          commandBufferCount = fromIntegral $ V.length fFramebuffers
+        }
+  
+  snd <$> withCommandBuffers device commandBufferAllocateInfo allocate
 
 withImageViews :: SwapchainDetails -> Vulkan (V.Vector ImageView)
 withImageViews SwapchainDetails{..} = do
