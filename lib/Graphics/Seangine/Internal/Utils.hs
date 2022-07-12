@@ -1,6 +1,7 @@
 module Graphics.Seangine.Internal.Utils
   (mresult,
-   throwIfUnsuccessful
+   throwIfUnsuccessful,
+   oneSecond
   ) where
 
 import Graphics.Seangine.Monad.Exception (throwSystemError)
@@ -15,3 +16,6 @@ mresult _ = mempty
 throwIfUnsuccessful :: MonadIO m => String -> Result -> m ()
 throwIfUnsuccessful _ SUCCESS = return ()
 throwIfUnsuccessful errMessage _ = throwSystemError errMessage
+
+oneSecond :: Num a => a
+oneSecond = 1e9

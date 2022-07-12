@@ -94,7 +94,7 @@ withVulkanFrame window surface = do
       fUniformBuffers = uniformBuffers,
       fDescriptorSets = (descriptorSets V.!) . fromIntegral, 
       fResources = resources,
-      fGpuWork = undefined
+      fGpuWork = fence
     }
 
 withCommandBuffers' :: Frame -> Vulkan (V.Vector CommandBuffer)

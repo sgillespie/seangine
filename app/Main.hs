@@ -8,7 +8,7 @@ import Graphics.Seangine.Monad hiding (getDataDir)
 import Graphics.Seangine.Window.SDL
 import Paths_seangine (getDataDir)
 
-import Control.Monad.Extra (anyM, whileM)
+import Control.Monad.Extra
 import Control.Monad.Trans.Resource
 import Control.Monad.IO.Class
 import Data.String
@@ -33,7 +33,13 @@ main = runResourceT $ do
     commandBuffers <- withCommandBuffers' initialFrame
     runCommandBuffers initialFrame commandBuffers
 
-    whileM (not . shouldQuit <$> awaitWindowEvents win)
+    flip loopM initialFrame $ \frame -> do
+      windowEvents <- awaitWindowEvents win
+      if shouldQuit windowEvents
+        then return $ Right ()
+        else do
+          runFrame frame (renderFrame commandBuffers)
+          return $ Left (advanceFrame frame)
 
 reportPhysicalDevice :: Vulkan ()
 reportPhysicalDevice = do
@@ -55,3 +61,5 @@ runCommandBuffers frame@Frame{..} commandBuffers = do
   V.forM_ (V.zip commandBuffers fFramebuffers) $ \(commandBuffer, framebuffer) ->
     runCmdT commandBuffer zero $ recordCommandBuffer frame framebuffer
     
+advanceFrame :: Frame -> Frame
+advanceFrame frame = frame { fIndex = succ (fIndex frame) }
