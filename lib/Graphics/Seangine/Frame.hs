@@ -1,17 +1,26 @@
-module Graphics.Seangine.VulkanFrame
+module Graphics.Seangine.Frame
   ( withVulkanFrame,
     withCommandBuffers',
     vertices,
-    vertexIndices
+    vertexIndices,
+
+    module Graphics.Seangine.Frame.UniformBufferObject,
+    module Graphics.Seangine.Frame.Vertex,
+    module Graphics.Seangine.Frame.VertexShader,
+    module Graphics.Seangine.Frame.FragShader
   ) where
 
-import Graphics.Seangine.Domain
-import Graphics.Seangine.Internal.BufferDetails
-import Graphics.Seangine.Internal.DescriptorSets (withDescriptorSets')
-import Graphics.Seangine.Internal.GraphicsPipelineDetails
-import Graphics.Seangine.Internal.SwapchainDetails
+import Graphics.Seangine.Frame.BufferDetails
+import Graphics.Seangine.Frame.DescriptorSets (withDescriptorSets')
+import Graphics.Seangine.Frame.FragShader
+import Graphics.Seangine.Frame.GraphicsPipelineDetails
+import Graphics.Seangine.Frame.SwapchainDetails
+import Graphics.Seangine.Frame.UniformBufferObject
+import Graphics.Seangine.Frame.Vertex
+import Graphics.Seangine.Frame.VertexShader
 import Graphics.Seangine.Internal.Utils (throwIfUnsuccessful)
 import Graphics.Seangine.Monad
+import Graphics.Seangine.Monad.Frame
 import Graphics.Seangine.Window
 
 import Control.Monad (forM)

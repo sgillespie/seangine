@@ -1,5 +1,5 @@
 {-# LANGUAGE QuasiQuotes #-}
-module Graphics.Seangine.Shaders.FragShader where
+module Graphics.Seangine.Frame.FragShader where
 
 import Vulkan.Utils.ShaderQQ.GLSL.Glslang (frag)
 

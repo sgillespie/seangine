@@ -1,11 +1,13 @@
-module Graphics.Seangine.Internal.GraphicsPipelineDetails
+module Graphics.Seangine.Frame.GraphicsPipelineDetails
   (GraphicsPipelineDetails(..),
    withGraphicsPipelineDetails) where
 
-import Graphics.Seangine.Domain
-import Graphics.Seangine.Internal.SwapchainDetails (SwapchainDetails(..))
+import Graphics.Seangine.Frame.FragShader (fragShaderCode)
+import Graphics.Seangine.Frame.SwapchainDetails (SwapchainDetails(..))
+import Graphics.Seangine.Frame.Vertex hiding (vertexAttributeDescriptions)
+import Graphics.Seangine.Frame.VertexShader (vertexShaderCode)
 import Graphics.Seangine.Monad (MonadInstance(..), SeangineInstance(..))
-import Graphics.Seangine.Shaders
+import qualified Graphics.Seangine.Frame.Vertex as Vertex
 
 import Control.Monad.Trans.Resource (allocate)
 import Vulkan.CStruct.Extends (SomeStruct(..))
@@ -139,7 +141,7 @@ withGraphicsPipeline layout renderPass extent@(Extent2D width height) = do
 
       vertexInput = SomeStruct $ zero
         { vertexBindingDescriptions = [vertexInputBindingDescription],
-          Vulkan.Core10.vertexAttributeDescriptions = V.fromList Graphics.Seangine.Domain.vertexAttributeDescriptions
+          vertexAttributeDescriptions = V.fromList Vertex.vertexAttributeDescriptions
         }
 
       inputAssembly = zero { topology = PRIMITIVE_TOPOLOGY_TRIANGLE_LIST }

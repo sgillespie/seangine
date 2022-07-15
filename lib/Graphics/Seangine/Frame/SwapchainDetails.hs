@@ -1,4 +1,4 @@
-module Graphics.Seangine.Internal.SwapchainDetails
+module Graphics.Seangine.Frame.SwapchainDetails
   (SwapchainDetails(..),
    withSwapchainDetails,
    withImageView'

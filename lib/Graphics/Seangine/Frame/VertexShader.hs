@@ -1,5 +1,5 @@
 {-# LANGUAGE QuasiQuotes #-}
-module Graphics.Seangine.Shaders.VertexShader
+module Graphics.Seangine.Frame.VertexShader
   ( vertexShaderCode,
     debugVertexShaderCode
   ) where

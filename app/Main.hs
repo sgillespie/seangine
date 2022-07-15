@@ -1,10 +1,6 @@
 module Main where
 
-import Graphics.Seangine
-import Graphics.Seangine.Domain
-import Graphics.Seangine.Render
-import Graphics.Seangine.VulkanFrame (withCommandBuffers', withVulkanFrame)
-import Graphics.Seangine.Monad hiding (getDataDir)
+import Graphics.Seangine hiding (getDataDir)
 import Graphics.Seangine.Window.SDL
 import Paths_seangine (getDataDir)
 

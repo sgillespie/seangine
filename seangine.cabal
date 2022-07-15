@@ -14,29 +14,26 @@ category:           Graphics
 library
     exposed-modules:
         Graphics.Seangine,
-        Graphics.Seangine.Domain,
-        Graphics.Seangine.Domain.Frame,
-        Graphics.Seangine.Domain.Vertex,
-        Graphics.Seangine.Domain.UniformBufferObject,
+        Graphics.Seangine.Frame,
+        Graphics.Seangine.Frame.FragShader,
+        Graphics.Seangine.Frame.UniformBufferObject,
+        Graphics.Seangine.Frame.Vertex,
+        Graphics.Seangine.Frame.VertexShader,
         Graphics.Seangine.Instance,
         Graphics.Seangine.Monad,
         Graphics.Seangine.Monad.Cmd,
         Graphics.Seangine.Monad.Exception,
+        Graphics.Seangine.Monad.Frame,
         Graphics.Seangine.Monad.Instance,
-        Graphics.Seangine.Monad.VulkanFrame,
         Graphics.Seangine.Render,
-        Graphics.Seangine.Shaders,
-        Graphics.Seangine.Shaders.FragShader,
-        Graphics.Seangine.Shaders.VertexShader,
-        Graphics.Seangine.VulkanFrame,
         Graphics.Seangine.Window,
         Graphics.Seangine.Window.SDL
     other-modules:
         Graphics.Seangine.Instance.PhysicalDeviceDetails
-        Graphics.Seangine.Internal.BufferDetails
-        Graphics.Seangine.Internal.DescriptorSets
-        Graphics.Seangine.Internal.GraphicsPipelineDetails
-        Graphics.Seangine.Internal.SwapchainDetails
+        Graphics.Seangine.Frame.BufferDetails
+        Graphics.Seangine.Frame.DescriptorSets
+        Graphics.Seangine.Frame.GraphicsPipelineDetails
+        Graphics.Seangine.Frame.SwapchainDetails
         Graphics.Seangine.Internal.Utils
     build-depends:
         base ^>=4.14.3.0,

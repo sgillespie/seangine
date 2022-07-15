@@ -3,10 +3,9 @@ module Graphics.Seangine.Render
     renderFrame
   ) where
 
-import Graphics.Seangine.Domain
-import Graphics.Seangine.Internal.Utils
 import Graphics.Seangine.Monad
-import Graphics.Seangine.VulkanFrame
+import Graphics.Seangine.Frame
+import Graphics.Seangine.Internal.Utils (oneSecond, throwIfUnsuccessful)
 
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Resource
@@ -53,7 +52,7 @@ recordCommandBuffer Frame{..} framebuffer = do
 
     cmdDrawIndexed commandBuffer (fromIntegral $ length vertexIndices) 1 0 0 0
 
-renderFrame :: V.Vector CommandBuffer -> VulkanFrame ()
+renderFrame :: V.Vector CommandBuffer -> SeangineFrame ()
 renderFrame commandBuffers = do
   device <- getDevice
   graphicsQueue <- getGraphicsQueue
@@ -92,7 +91,7 @@ renderFrame commandBuffers = do
   return ()
 
 
-updateUniformBuffer :: Word32 -> VulkanFrame ()
+updateUniformBuffer :: Word32 -> SeangineFrame ()
 updateUniformBuffer imageIndex = do
   allocator <- getAllocator
   Frame{..} <- getFrame

@@ -1,7 +1,7 @@
-module Graphics.Seangine.Internal.DescriptorSets
+module Graphics.Seangine.Frame.DescriptorSets
   (withDescriptorSets') where
 
-import Graphics.Seangine.Domain (UniformBufferObject(..))
+import Graphics.Seangine.Frame.UniformBufferObject (UniformBufferObject(..))
 import Graphics.Seangine.Monad (MonadInstance(..), SeangineInstance)
 
 import Control.Monad.Trans.Resource (allocate)

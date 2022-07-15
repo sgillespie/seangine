@@ -1,4 +1,4 @@
-module Graphics.Seangine.Domain.UniformBufferObject
+module Graphics.Seangine.Frame.UniformBufferObject
   ( UniformBufferObject(..)
   ) where
 
