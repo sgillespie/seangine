@@ -2,16 +2,17 @@ module Graphics.Seangine.Internal.GraphicsPipelineDetails
   (GraphicsPipelineDetails(..),
    withGraphicsPipelineDetails) where
 
+import Graphics.Seangine.Domain
 import Graphics.Seangine.Internal.SwapchainDetails (SwapchainDetails(..))
 import Graphics.Seangine.Monad.Vulkan (MonadVulkan(..), Vulkan(..))
-import Graphics.Seangine.Shaders (fragShaderCode, vertexShaderCode)
+import Graphics.Seangine.Shaders
 
 import Control.Monad.Trans.Resource (allocate)
 import Vulkan.CStruct.Extends (SomeStruct(..))
 import Vulkan.Core10
 import Vulkan.Zero (Zero(..))
-
 import Data.Bits (Bits(..))
+import Foreign.Storable (Storable(..))
 import qualified Data.Vector as V
 
 data GraphicsPipelineDetails = GraphicsPipelineDetails
@@ -30,7 +31,7 @@ withGraphicsPipelineDetails SwapchainDetails{..} = do
 
   return $ GraphicsPipelineDetails
     { descriptorSetLayout = descriptorSetLayout,
-      pipelineLayout = pipelineLayout,
+      pipelineLayout = pipelineLayout, 
       renderPass = renderPass,
       graphicsPipeline = graphicsPipeline
     }
@@ -137,8 +138,8 @@ withGraphicsPipeline layout renderPass extent@(Extent2D width height) = do
         }
 
       vertexInput = SomeStruct $ zero
-        { vertexBindingDescriptions = [],
-          vertexAttributeDescriptions = []
+        { vertexBindingDescriptions = [vertexInputBindingDescription],
+          Vulkan.Core10.vertexAttributeDescriptions = V.fromList Graphics.Seangine.Domain.vertexAttributeDescriptions
         }
 
       inputAssembly = zero { topology = PRIMITIVE_TOPOLOGY_TRIANGLE_LIST }
@@ -154,7 +155,7 @@ withGraphicsPipeline layout renderPass extent@(Extent2D width height) = do
         { cullMode = CULL_MODE_BACK_BIT,
           depthBiasEnable = False,
           depthClampEnable = False,
-          frontFace = FRONT_FACE_CLOCKWISE,
+          frontFace = FRONT_FACE_COUNTER_CLOCKWISE,
           lineWidth = 1,
           polygonMode = POLYGON_MODE_FILL,
           rasterizerDiscardEnable = False
@@ -175,6 +176,11 @@ withGraphicsPipeline layout renderPass extent@(Extent2D width height) = do
 
       colorBlend = SomeStruct
         (zero { attachments = [pipelineColorBlendAttachment] } :: PipelineColorBlendStateCreateInfo '[])
+
+      vertexInputBindingDescription = zero
+        { stride = fromIntegral $ sizeOf (zero :: Vertex),
+          inputRate = VERTEX_INPUT_RATE_VERTEX
+        }
 
   (_, pipelines) <-
     withGraphicsPipelines device pipelineCache [pipelineCreateInfo] Nothing allocate

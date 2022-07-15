@@ -34,7 +34,7 @@ main = runResourceT $ do
     runCommandBuffers initialFrame commandBuffers
 
     flip loopM initialFrame $ \frame -> do
-      windowEvents <- awaitWindowEvents win
+      windowEvents <- pollWindowEvents win
       if shouldQuit windowEvents
         then return $ Right ()
         else do

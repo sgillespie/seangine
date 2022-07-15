@@ -14,6 +14,7 @@ import Vulkan.Extensions.VK_EXT_debug_utils
 import Vulkan.Extensions.VK_KHR_surface
 import Vulkan.Extensions.VK_KHR_swapchain
 import Vulkan.Extensions.VK_KHR_shader_non_semantic_info
+import Vulkan.Extensions.VK_EXT_validation_features
 import Vulkan.Utils.Debug (debugCallbackPtr)
 import Vulkan.Version
 import Vulkan.Zero (Zero(..))
@@ -89,7 +90,8 @@ withInstance'
   -> m Instance
 withInstance' exts = do
   let instanceCreateInfo = zero
-        { applicationInfo = Just applicationInfo,
+        { next = (debugMessengerInfo, (validationFeatures, ())),
+          applicationInfo = Just applicationInfo,
           enabledLayerNames = enabledLayers,
           enabledExtensionNames = extraExtensions <> exts
         }
@@ -104,6 +106,12 @@ withInstance' exts = do
         { messageSeverity = foldr (.|.) zeroBits debugMsgSeverities,
           messageType = foldr (.|.) zeroBits debugMsgTypes,
           pfnUserCallback = debugCallbackPtr
+        }
+
+      
+      validationFeatures = ValidationFeaturesEXT
+        { enabledValidationFeatures = [VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT],
+          disabledValidationFeatures = []
         }
   
   (_, instance') <- withInstance instanceCreateInfo Nothing allocate

@@ -3,16 +3,24 @@ module Graphics.Seangine.Render
     renderFrame
   ) where
 
-import Graphics.Seangine.Domain (Frame(..))
+import Graphics.Seangine.Domain
 import Graphics.Seangine.Internal.Utils
 import Graphics.Seangine.Monad
 import Graphics.Seangine.VulkanFrame
 
+import Control.Monad.IO.Unlift
+import Control.Monad.Trans.Resource
 import Control.Monad.Trans.Reader (ask)
-import Vulkan.Core10
+import Data.Word
+import Foreign.Storable
+import Foreign.Ptr (castPtr)
+import GHC.Clock (getMonotonicTime)
+import Linear hiding (zero)
+import Vulkan.Core10 hiding (withMappedMemory)
 import Vulkan.CStruct.Extends (SomeStruct(..))
 import Vulkan.Extensions.VK_KHR_swapchain
 import Vulkan.Zero (Zero(..))
+import VulkanMemoryAllocator (withMappedMemory)
 import qualified Data.Vector as V
 
 recordCommandBuffer :: Frame -> Framebuffer -> CmdT Vulkan ()
@@ -55,6 +63,8 @@ renderFrame commandBuffers = do
   (imageResult, imageIndex) <- acquireNextImageKHR device fSwapchain maxBound fImageAvailable zero
   throwIfUnsuccessful "Failed to acquire swapchain image!" imageResult
 
+  updateUniformBuffer imageIndex
+
   let submitInfo = SomeStruct $ zero
         { waitSemaphores = [fImageAvailable],
           waitDstStageMask = [PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT],
@@ -79,4 +89,39 @@ renderFrame commandBuffers = do
   throwIfUnsuccessful "Timed out waiting for fence" fenceResult
   resetFences device [fGpuWork]
   
+  return ()
+
+
+updateUniformBuffer :: Word32 -> VulkanFrame ()
+updateUniformBuffer imageIndex = do
+  allocator <- getAllocator
+  Frame{..} <- getFrame
+  currentTime <- liftIO getMonotonicTime
+
+  let elapsed = currentTime - fStartTime
+
+      (Extent2D w h) = fImageExtent
+
+      proj = perspective (pi/4) (fromIntegral w / fromIntegral h) 0.1 10
+      (V4 pw px py pz) = proj
+
+      rotationAngle = realToFrac $ elapsed * (pi / 2) :: Float
+      rotationMatrix
+        = V3
+            (V3 (cos rotationAngle) (-sin rotationAngle) 0)
+            (V3 (sin rotationAngle) (cos rotationAngle) 0)
+            (V3 0 0 1)
+
+      uniformObject = UniformBufferObject
+        { model = mkTransformationMat rotationMatrix (V3 0 0 0),
+          view = lookAt (V3 2 2 2) (V3 0 0 0) (V3 0 0 1),
+          projection = V4 pw (-px) py pz
+        }
+
+      (_, bufferAlloc) = fUniformBuffers V.! fromIntegral imageIndex
+
+  (unmapMem, data') <- withMappedMemory allocator bufferAlloc allocate
+  liftIO $ poke (castPtr data') uniformObject
+  release unmapMem
+
   return ()

@@ -7,6 +7,7 @@ import SDL.Video.Vulkan
 import Vulkan.Core10 (Instance(..))
 import Vulkan.Extensions.VK_KHR_surface (SurfaceKHR(..), destroySurfaceKHR)
 import qualified SDL
+import qualified SDL.Event as E
 
 import Control.Monad.IO.Class (MonadIO(..))
 import Data.Maybe (mapMaybe)
@@ -27,7 +28,7 @@ instance WindowSystem SdlWindowSystem where
   getVulkanExtensions = windowExts . unWindow
   createVulkanSurface instance' = createVulkanSurface' instance' . unWindow
   getDrawableSize = getDrawableSize' . unWindow
-  awaitWindowEvents _ = awaitWindowEvents'
+  pollWindowEvents _ = pollWindowEvents'
 
 sdlWindowSystem = SdlWindowSystem
 
@@ -69,12 +70,10 @@ getDrawableSize' window = do
 
   return (length', width')
 
-awaitWindowEvents' :: MonadIO m => m [WindowEvent]
-awaitWindowEvents' = do
-  nextEvent <- SDL.waitEvent
-  pendingEvents <- SDL.pollEvents
-
-  let events = nextEvent : pendingEvents
+pollWindowEvents' :: MonadIO m => m [WindowEvent]
+pollWindowEvents' = do
+  E.pumpEvents
+  events <- E.pollEvents
 
   return $ mapMaybe fromSdlEvent events
 

@@ -60,7 +60,7 @@ class WindowSystem system where
     => Window system window
     -> io (Int, Int)
 
-  awaitWindowEvents
+  pollWindowEvents
     :: MonadResource resource
     => Window system window
     -> resource [WindowEvent]
