@@ -2,7 +2,7 @@ module Graphics.Seangine.Internal.DescriptorSets
   (withDescriptorSets') where
 
 import Graphics.Seangine.Domain (UniformBufferObject(..))
-import Graphics.Seangine.Monad (MonadVulkan(..), Vulkan)
+import Graphics.Seangine.Monad (MonadInstance(..), SeangineInstance)
 
 import Control.Monad.Trans.Resource (allocate)
 import Data.Word (Word32())
@@ -16,7 +16,7 @@ withDescriptorSets'
   :: V.Vector ImageView
   -> V.Vector Buffer
   -> DescriptorSetLayout
-  -> Vulkan (V.Vector DescriptorSet)
+  -> SeangineInstance (V.Vector DescriptorSet)
 withDescriptorSets' imageViews uniformBuffers descriptorSetLayout = do
   device <- getDevice
 
@@ -29,7 +29,7 @@ withDescriptorSets' imageViews uniformBuffers descriptorSetLayout = do
   
   return descriptorSets
 
-withDescriptorPool' :: Word32 -> Vulkan DescriptorPool
+withDescriptorPool' :: Word32 -> SeangineInstance DescriptorPool
 withDescriptorPool' descriptorCount = do
   device <- getDevice
 
@@ -48,7 +48,7 @@ withDescriptorPool' descriptorCount = do
 allocateDescriptorSets'
   :: DescriptorPool
   -> V.Vector DescriptorSetLayout
-  -> Vulkan (V.Vector DescriptorSet)
+  -> SeangineInstance (V.Vector DescriptorSet)
 allocateDescriptorSets' descriptorPool setLayouts = do
   device <- getDevice
 
@@ -62,7 +62,7 @@ allocateDescriptorSets' descriptorPool setLayouts = do
 updateDescriptorSets'
   :: V.Vector DescriptorSet
   -> V.Vector Buffer
-  -> Vulkan ()
+  -> SeangineInstance ()
 updateDescriptorSets' descriptorSets uniformBuffers = do
   device <- getDevice
 
@@ -71,7 +71,7 @@ updateDescriptorSets' descriptorSets uniformBuffers = do
 updateDescriptorSet'
   :: DescriptorSet
   -> Buffer
-  -> Vulkan ()
+  -> SeangineInstance ()
 updateDescriptorSet' descriptorSet uniformBuffer = do
   device <- getDevice
   

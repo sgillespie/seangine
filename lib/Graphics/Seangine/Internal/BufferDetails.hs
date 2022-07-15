@@ -34,7 +34,7 @@ withBufferDetails
   :: DeviceSize
   -> BufferUsageFlags
   -> MemoryPropertyFlags
-  -> Vulkan BufferDetails
+  -> SeangineInstance BufferDetails
 withBufferDetails bufferSize bufferUsageFlags requiredMemoryFlags = do
   allocator <- getAllocator
   
@@ -58,7 +58,7 @@ withDeviceLocalBuffer
   => DeviceSize
   -> BufferUsageFlags
   -> [storable]
-  -> Vulkan BufferDetails
+  -> SeangineInstance BufferDetails
 withDeviceLocalBuffer bufferSize bufferUsageFlags data' = do
   allocator <- getAllocator
 
@@ -82,7 +82,7 @@ copyBuffer
   :: BufferDetails
   -> BufferDetails
   -> DeviceSize
-  -> Vulkan ()
+  -> SeangineInstance ()
 copyBuffer srcBuffer dstBuffer deviceSize = withOneTimeCommands $ do
   commandBuffer <- getCommandBuffer
 
@@ -99,7 +99,7 @@ copyBufferToImage
   -> Image
   -> Word32
   -> Word32
-  -> Vulkan ()
+  -> SeangineInstance ()
 copyBufferToImage buffer image width height = withOneTimeCommands $ do
   commandBuffer <- getCommandBuffer
 
@@ -127,7 +127,7 @@ pokeArrayToBuffer
   :: Storable storable
   => BufferDetails
   -> [storable]
-  -> Vulkan ()
+  -> SeangineInstance ()
 pokeArrayToBuffer BufferDetails{..} data' = do
   allocator <- getAllocator
   
@@ -136,7 +136,7 @@ pokeArrayToBuffer BufferDetails{..} data' = do
   liftIO $ pokeArray (castPtr stagingMemory) data'
   release releaseStagingMemory
 
-withOneTimeCommands :: CmdT Vulkan a -> Vulkan a
+withOneTimeCommands :: CmdT SeangineInstance a -> SeangineInstance a
 withOneTimeCommands commands = do
   device <- getDevice
   graphicsQueue <- getGraphicsQueue
@@ -149,7 +149,7 @@ withOneTimeCommands commands = do
   release releaseCommandBuffer
   return result
 
-withOneTimeCommandBuffer :: Vulkan (ReleaseKey, CommandBuffer)
+withOneTimeCommandBuffer :: SeangineInstance (ReleaseKey, CommandBuffer)
 withOneTimeCommandBuffer = do
   commandPool <- getCommandPool
   device <- getDevice
@@ -167,8 +167,8 @@ withOneTimeCommandBuffer = do
 
 recordOneTimeCommandBuffer
   :: CommandBuffer
-  -> CmdT Vulkan a
-  -> Vulkan a
+  -> CmdT SeangineInstance a
+  -> SeangineInstance a
 recordOneTimeCommandBuffer commandBuffer commands
   = runCmdT commandBuffer beginInfo commands
   where beginInfo :: CommandBufferBeginInfo '[]
@@ -176,7 +176,7 @@ recordOneTimeCommandBuffer commandBuffer commands
           { flags = COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT }
 
 submitOneTimeCommandBuffer
-  :: (MonadVulkan vulkan, MonadIO vulkan)
+  :: (MonadInstance vulkan, MonadIO vulkan)
   => CommandBuffer
   -> vulkan ()
 submitOneTimeCommandBuffer commandBuffer = do

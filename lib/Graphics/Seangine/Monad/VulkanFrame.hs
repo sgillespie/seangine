@@ -6,15 +6,15 @@ module Graphics.Seangine.Monad.VulkanFrame
     runFrame
   ) where
 
+import Graphics.Seangine.Domain (Frame(..))
+import Graphics.Seangine.Monad.Instance
+
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader
-
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Resource
 
-import Graphics.Seangine.Domain (Frame(..))
-import Graphics.Seangine.Monad.Vulkan
 
 -- |MonadFrame class. Contains reference to per-frame resources
 class Monad m => MonadFrame m where
@@ -25,13 +25,13 @@ instance MonadFrame m => MonadFrame (ReaderT r m) where
 
 -- |Frame monad. Contains references to per-frame resources and Vulkan handles
 newtype VulkanFrame a
-  = VulkanFrame { unFrame :: ReaderT Frame Vulkan a }
+  = VulkanFrame { unFrame :: ReaderT Frame SeangineInstance a }
   deriving (Functor,
             Applicative,
             Monad,
             MonadFail,
             MonadIO,
-            MonadVulkan
+            MonadInstance
            )
 
 instance MonadFrame VulkanFrame where
@@ -64,5 +64,5 @@ allocateVulkan_ create destroy = allocateVulkan create (const destroy)
 
 -- |Runs the given Frame monad using the provided frame. The resulting environment
 -- contains the global Vulkan handles
-runFrame :: Frame -> VulkanFrame a -> Vulkan a
+runFrame :: Frame -> VulkanFrame a -> SeangineInstance a
 runFrame frame (VulkanFrame f) = runReaderT f frame

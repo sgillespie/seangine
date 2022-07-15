@@ -47,7 +47,7 @@ withSwapchainDetails
   :: WindowSystem system
   => Window system window
   -> SurfaceKHR
-  -> Vulkan SwapchainDetails
+  -> SeangineInstance SwapchainDetails
 withSwapchainDetails window surface = do
   device <- getDevice
   surfaceFormats <- getSurfaceFormats
@@ -89,7 +89,7 @@ withSwapchainDetails window surface = do
       sdDepthFormat = depthFormat
     }
 
-withImageView' :: Image -> Format -> ImageAspectFlags -> Vulkan ImageView
+withImageView' :: Image -> Format -> ImageAspectFlags -> SeangineInstance ImageView
 withImageView' image format flags = do
   device <- getDevice
 
@@ -126,7 +126,7 @@ choosePresentMode presentModes
       PRESENT_MODE_FIFO_KHR
       (V.find (preferredPresentMode==) presentModes)
 
-chooseSwapExtent :: WindowSystem system => Window system window -> Vulkan Extent2D
+chooseSwapExtent :: WindowSystem system => Window system window -> SeangineInstance Extent2D
 chooseSwapExtent window = do
   SurfaceCapabilitiesKHR{currentExtent=currentExtent} <- getSurfaceCapabilities
   let (Extent2D width height) = currentExtent
@@ -135,7 +135,7 @@ chooseSwapExtent window = do
       then windowExtent window
       else return currentExtent
 
-chooseDepthFormat :: Vulkan Format
+chooseDepthFormat :: SeangineInstance Format
 chooseDepthFormat = do
   device <- getPhysicalDevice
 
@@ -168,7 +168,7 @@ chooseQueueFamilyIndices SHARING_MODE_CONCURRENT graphicsFamily presentFamily
   = [graphicsFamily, presentFamily]
 chooseQueueFamilyIndices SHARING_MODE_EXCLUSIVE _ _ = []
 
-windowExtent :: WindowSystem system => Window system window -> Vulkan Extent2D
+windowExtent :: WindowSystem system => Window system window -> SeangineInstance Extent2D
 windowExtent window = do
   (width, height) <- getDrawableSize window
   return $ Extent2D (fromIntegral width) (fromIntegral height)

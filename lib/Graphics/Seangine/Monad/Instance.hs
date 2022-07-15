@@ -1,9 +1,9 @@
-module Graphics.Seangine.Monad.Vulkan
-  ( MonadVulkan(..),
-    VulkanHandles(..),
-    Vulkan(..),
-    askVulkan,
-    runVulkan
+module Graphics.Seangine.Monad.Instance
+  ( MonadInstance(..),
+    InstanceHandles(..),
+    SeangineInstance(..),
+    askInstance,
+    runInstance
   ) where
 
 import Control.Monad.IO.Class
@@ -18,8 +18,9 @@ import Vulkan.Core10
 import Vulkan.Extensions.VK_KHR_surface (PresentModeKHR, SurfaceCapabilitiesKHR, SurfaceFormatKHR)
 import VulkanMemoryAllocator
 
--- |Vulkan monad class. Contains convenience accessors to Vulkan handles
-class Monad m => MonadVulkan m where
+-- |Monad class containing all Vulkan instance-level resources. Once these are created,
+-- they DO NOT need not be recreated along with the swapchain.
+class Monad m => MonadInstance m where
   getDataDir :: m FilePath
   getInstance :: m Instance
   getPhysicalDevice :: m PhysicalDevice
@@ -34,7 +35,7 @@ class Monad m => MonadVulkan m where
   getPresentModes :: m (Vector PresentModeKHR)
   getCommandPool :: m CommandPool
 
-instance MonadVulkan m => MonadVulkan (ReaderT r m) where
+instance MonadInstance m => MonadInstance (ReaderT r m) where
   getDataDir = lift getDataDir
   getInstance = lift getInstance
   getPhysicalDevice = lift getPhysicalDevice
@@ -49,8 +50,7 @@ instance MonadVulkan m => MonadVulkan (ReaderT r m) where
   getPresentModes = lift getPresentModes
   getCommandPool = lift getCommandPool
 
--- |References to all relevant Vulkan handles
-data VulkanHandles = VulkanHandles
+data InstanceHandles = InstanceHandles
   { vhDataDir :: FilePath,
     vhInstance :: Instance,
     vhPhysicalDevice :: PhysicalDevice,
@@ -66,9 +66,8 @@ data VulkanHandles = VulkanHandles
     vhCommandPool :: CommandPool
   }
 
--- |Main Vulkan monad. Contains references to all relevant Vulkan handles
-newtype Vulkan a
-  = Vulkan { unVulkan :: ReaderT VulkanHandles (ResourceT IO) a }
+newtype SeangineInstance a
+  = SeangineInstance { unInstance :: ReaderT InstanceHandles (ResourceT IO) a }
   deriving (Functor,
             Applicative,
             Monad,
@@ -77,29 +76,29 @@ newtype Vulkan a
             MonadResource
            )
 
-instance MonadVulkan Vulkan where
-  getDataDir = Vulkan (asks vhDataDir)
-  getInstance = Vulkan (asks vhInstance)
-  getPhysicalDevice = Vulkan (asks vhPhysicalDevice)
-  getDevice = Vulkan (asks vhDevice)
-  getAllocator = Vulkan (asks vhAllocator)
-  getGraphicsQueue = Vulkan (asks vhGraphicsQueue)
-  getPresentQueue = Vulkan (asks vhPresentQueue)
-  getGraphicsQueueFamily = Vulkan (asks vhGraphicsQueueFamily)
-  getPresentQueueFamily = Vulkan (asks vhPresentQueueFamily)
-  getSurfaceCapabilities = Vulkan (asks vhSurfaceCapabilities)
-  getSurfaceFormats = Vulkan (asks vhSurfaceFormats)
-  getPresentModes = Vulkan (asks vhPresentModes)
-  getCommandPool = Vulkan (asks vhCommandPool)
+instance MonadInstance SeangineInstance where
+  getDataDir = SeangineInstance (asks vhDataDir)
+  getInstance = SeangineInstance (asks vhInstance)
+  getPhysicalDevice = SeangineInstance (asks vhPhysicalDevice)
+  getDevice = SeangineInstance (asks vhDevice)
+  getAllocator = SeangineInstance (asks vhAllocator)
+  getGraphicsQueue = SeangineInstance (asks vhGraphicsQueue)
+  getPresentQueue = SeangineInstance (asks vhPresentQueue)
+  getGraphicsQueueFamily = SeangineInstance (asks vhGraphicsQueueFamily)
+  getPresentQueueFamily = SeangineInstance (asks vhPresentQueueFamily)
+  getSurfaceCapabilities = SeangineInstance (asks vhSurfaceCapabilities)
+  getSurfaceFormats = SeangineInstance (asks vhSurfaceFormats)
+  getPresentModes = SeangineInstance (asks vhPresentModes)
+  getCommandPool = SeangineInstance (asks vhCommandPool)
 
-instance MonadUnliftIO Vulkan where
-  withRunInIO a = Vulkan $ withRunInIO (\r -> a (r . unVulkan))
+instance MonadUnliftIO SeangineInstance where
+  withRunInIO a = SeangineInstance $ withRunInIO (\r -> a (r . unInstance))
 
 -- |Get the handles as a single value
-askVulkan :: Vulkan VulkanHandles
-askVulkan = Vulkan ask
+askInstance :: SeangineInstance InstanceHandles
+askInstance = SeangineInstance ask
 
--- |Runs a the given Vulkan monad using the provided handles. The resulting ResourceT
--- environment correctly destroys the Vulkan instance and all handles
-runVulkan :: VulkanHandles -> Vulkan a -> ResourceT IO a
-runVulkan handles = flip runReaderT handles . unVulkan
+-- |Runs a the given Instance monad using the provided handles. The resulting ResourceT
+-- environment correctly destroys all handles
+runInstance :: InstanceHandles -> SeangineInstance a -> ResourceT IO a
+runInstance handles = flip runReaderT handles . unInstance

@@ -18,11 +18,11 @@ library
         Graphics.Seangine.Domain.Frame,
         Graphics.Seangine.Domain.Vertex,
         Graphics.Seangine.Domain.UniformBufferObject,
-        Graphics.Seangine.Init,
+        Graphics.Seangine.Instance,
         Graphics.Seangine.Monad,
         Graphics.Seangine.Monad.Cmd,
         Graphics.Seangine.Monad.Exception,
-        Graphics.Seangine.Monad.Vulkan,
+        Graphics.Seangine.Monad.Instance,
         Graphics.Seangine.Monad.VulkanFrame,
         Graphics.Seangine.Render,
         Graphics.Seangine.Shaders,
@@ -32,11 +32,11 @@ library
         Graphics.Seangine.Window,
         Graphics.Seangine.Window.SDL
     other-modules:
+        Graphics.Seangine.Instance.PhysicalDeviceDetails
         Graphics.Seangine.Internal.BufferDetails
         Graphics.Seangine.Internal.DescriptorSets
         Graphics.Seangine.Internal.GraphicsPipelineDetails
         Graphics.Seangine.Internal.SwapchainDetails
-        Graphics.Seangine.Internal.PhysicalDeviceDetails
         Graphics.Seangine.Internal.Utils
     build-depends:
         base ^>=4.14.3.0,

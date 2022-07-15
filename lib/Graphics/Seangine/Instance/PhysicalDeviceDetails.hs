@@ -1,4 +1,4 @@
-module Graphics.Seangine.Internal.PhysicalDeviceDetails
+module Graphics.Seangine.Instance.PhysicalDeviceDetails
   ( PhysicalDeviceDetails(..),
     physicalDeviceDetails,
     isDeviceSuitable,

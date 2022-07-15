@@ -54,10 +54,10 @@ withVulkanFrame
   :: WindowSystem system
   => Window system window
   -> SurfaceKHR
-  -> Vulkan Frame
+  -> SeangineInstance Frame
 withVulkanFrame window surface = do
   device <- getDevice
-  handles <- Vulkan ask
+  handles <- SeangineInstance ask
   allocator <- getAllocator
 
   start <- liftIO getMonotonicTime
@@ -97,7 +97,7 @@ withVulkanFrame window surface = do
       fGpuWork = fence
     }
 
-withCommandBuffers' :: Frame -> Vulkan (V.Vector CommandBuffer)
+withCommandBuffers' :: Frame -> SeangineInstance (V.Vector CommandBuffer)
 withCommandBuffers' Frame{..} = do
   commandPool <- getCommandPool
   device <- getDevice
@@ -110,7 +110,7 @@ withCommandBuffers' Frame{..} = do
   
   snd <$> withCommandBuffers device commandBufferAllocateInfo allocate
 
-withImageViews :: SwapchainDetails -> Vulkan (V.Vector ImageView)
+withImageViews :: SwapchainDetails -> SeangineInstance (V.Vector ImageView)
 withImageViews SwapchainDetails{..} = do
   device <- getDevice
 
@@ -125,7 +125,7 @@ withFramebuffers
   -> ImageView
   -> RenderPass
   -> Extent2D
-  -> Vulkan (V.Vector Framebuffer)
+  -> SeangineInstance (V.Vector Framebuffer)
 withFramebuffers imageViews depthImageView renderPass imageExtent = do
   device <- getDevice
 
@@ -143,12 +143,12 @@ withFramebuffers imageViews depthImageView renderPass imageExtent = do
   for imageViews $ \imageView ->
     snd <$> withFramebuffer device (framebufferCreateInfo imageView) Nothing allocate
 
-withDepthImageView :: SwapchainDetails -> Vulkan ImageView
+withDepthImageView :: SwapchainDetails -> SeangineInstance ImageView
 withDepthImageView swapchain@SwapchainDetails{..} = do
   depthImage <- withDepthImage swapchain
   withImageView' depthImage sdDepthFormat IMAGE_ASPECT_DEPTH_BIT
 
-withSemaphores :: Vulkan (Semaphore, Semaphore)
+withSemaphores :: SeangineInstance (Semaphore, Semaphore)
 withSemaphores = do
   device <- getDevice
 
@@ -159,7 +159,7 @@ withSemaphores = do
 
   return (imageAvailable, renderFinished)
 
-withDepthImage :: SwapchainDetails -> Vulkan Image
+withDepthImage :: SwapchainDetails -> SeangineInstance Image
 withDepthImage SwapchainDetails{..} = do
   allocator <- getAllocator
   device <- getDevice
@@ -186,21 +186,21 @@ withDepthImage SwapchainDetails{..} = do
 
   return depthImage
 
-withVertexBuffer :: Vulkan Buffer
+withVertexBuffer :: SeangineInstance Buffer
 withVertexBuffer = do
   let bufferSize = fromIntegral $ sizeOf (zero :: Vertex) * length vertices
       usageFlags = BUFFER_USAGE_VERTEX_BUFFER_BIT
 
   bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags vertices
 
-withIndexBuffer :: Vulkan Buffer
+withIndexBuffer :: SeangineInstance Buffer
 withIndexBuffer = do
   let bufferSize = fromIntegral $ sizeOf (undefined :: CUShort) * length vertexIndices
       usageFlags = BUFFER_USAGE_INDEX_BUFFER_BIT
   
   bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags vertexIndices
 
-withUniformBuffer :: V.Vector ImageView -> Vulkan (V.Vector (Buffer, VMA.Allocation))
+withUniformBuffer :: V.Vector ImageView -> SeangineInstance (V.Vector (Buffer, VMA.Allocation))
 withUniformBuffer imageViews = do
   allocator <- getAllocator
 
@@ -212,7 +212,7 @@ withUniformBuffer imageViews = do
     BufferDetails{..} <- withBufferDetails bufferSize usageFlags memoryFlags
     return (bdBuffer, bdAllocation)
 
-withFence' :: Vulkan Fence
+withFence' :: SeangineInstance Fence
 withFence' = do
   device <- getDevice
 

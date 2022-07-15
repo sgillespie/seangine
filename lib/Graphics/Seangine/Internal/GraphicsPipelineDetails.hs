@@ -4,7 +4,7 @@ module Graphics.Seangine.Internal.GraphicsPipelineDetails
 
 import Graphics.Seangine.Domain
 import Graphics.Seangine.Internal.SwapchainDetails (SwapchainDetails(..))
-import Graphics.Seangine.Monad.Vulkan (MonadVulkan(..), Vulkan(..))
+import Graphics.Seangine.Monad (MonadInstance(..), SeangineInstance(..))
 import Graphics.Seangine.Shaders
 
 import Control.Monad.Trans.Resource (allocate)
@@ -22,7 +22,7 @@ data GraphicsPipelineDetails = GraphicsPipelineDetails
     graphicsPipeline :: Pipeline
   }
 
-withGraphicsPipelineDetails :: SwapchainDetails -> Vulkan GraphicsPipelineDetails
+withGraphicsPipelineDetails :: SwapchainDetails -> SeangineInstance GraphicsPipelineDetails
 withGraphicsPipelineDetails SwapchainDetails{..} = do
   descriptorSetLayout <- withDescriptorSetLayout'
   pipelineLayout <- withPipelineLayout' descriptorSetLayout
@@ -36,7 +36,7 @@ withGraphicsPipelineDetails SwapchainDetails{..} = do
       graphicsPipeline = graphicsPipeline
     }
 
-withDescriptorSetLayout' :: Vulkan DescriptorSetLayout
+withDescriptorSetLayout' :: SeangineInstance DescriptorSetLayout
 withDescriptorSetLayout' = do
   device <- getDevice
   let createInfo = zero
@@ -51,7 +51,7 @@ withDescriptorSetLayout' = do
 
   snd <$> withDescriptorSetLayout device createInfo Nothing allocate
 
-withPipelineLayout' :: DescriptorSetLayout -> Vulkan PipelineLayout
+withPipelineLayout' :: DescriptorSetLayout -> SeangineInstance PipelineLayout
 withPipelineLayout' setLayout = do
   device <- getDevice
   
@@ -61,7 +61,7 @@ withPipelineLayout' setLayout = do
   
   snd <$> withPipelineLayout device createInfo Nothing allocate
 
-withRenderPass' :: Format -> Format -> Vulkan RenderPass
+withRenderPass' :: Format -> Format -> SeangineInstance RenderPass
 withRenderPass' colorFormat depthFormat = do
   device <- getDevice
 
@@ -117,7 +117,7 @@ withRenderPass' colorFormat depthFormat = do
 
   snd <$> withRenderPass device createInfo Nothing allocate
 
-withGraphicsPipeline :: PipelineLayout -> RenderPass -> Extent2D -> Vulkan Pipeline
+withGraphicsPipeline :: PipelineLayout -> RenderPass -> Extent2D -> SeangineInstance Pipeline
 withGraphicsPipeline layout renderPass extent@(Extent2D width height) = do
   device <- getDevice
 
@@ -199,7 +199,7 @@ subpassAttachmentRefs = (colorAttachmentRef, depthStencilAttachment)
             layout = IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
           }
 
-withPipelineShaderStages :: Vulkan (V.Vector (SomeStruct PipelineShaderStageCreateInfo))
+withPipelineShaderStages :: SeangineInstance (V.Vector (SomeStruct PipelineShaderStageCreateInfo))
 withPipelineShaderStages = do
   (vertexShaderModule, fragShaderModule) <- withShaderModules
   
@@ -249,7 +249,7 @@ pipelineColorBlendAttachment = zero
         .|. COLOR_COMPONENT_A_BIT
   }
 
-withShaderModules :: Vulkan (ShaderModule, ShaderModule)
+withShaderModules :: SeangineInstance (ShaderModule, ShaderModule)
 withShaderModules = do
   device <- getDevice
 

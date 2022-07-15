@@ -1,15 +1,14 @@
 module Graphics.Seangine.Monad.Cmd (MonadCmd(..), CmdT(..), runCmdT) where
 
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Reader
+import Graphics.Seangine.Monad.Instance
 
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Resource
 import Vulkan.CStruct.Extends
 import Vulkan.Core10
-
-import Graphics.Seangine.Monad.Vulkan
 
 -- |Vulkan command monad class. Wraps a command buffer.
 class Monad m => MonadCmd m where
@@ -26,7 +25,7 @@ newtype CmdT m a = CmdT { unCmdT :: ReaderT CommandBuffer m a }
                     Monad,
                     MonadIO,
                     MonadResource,
-                    MonadVulkan
+                    MonadInstance
                    )
 
 instance Monad m => MonadCmd (CmdT m) where

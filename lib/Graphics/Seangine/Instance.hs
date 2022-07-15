@@ -1,36 +1,38 @@
-module Graphics.Seangine.Init (withVulkanInstance, withInstance') where
+module Graphics.Seangine.Instance
+  ( withInstanceHandles,
+    withVulkanInstance
+  ) where
 
 import Graphics.Seangine.Monad
-import Graphics.Seangine.Internal.PhysicalDeviceDetails
+import Graphics.Seangine.Instance.PhysicalDeviceDetails
 import Graphics.Seangine.Internal.Utils (mresult)
 
+import Control.Exception
+import Control.Monad
 import Control.Monad.IO.Unlift (MonadIO(..))
 import Control.Monad.Trans.Resource (MonadResource(..), allocate)
-import Data.Foldable.Extra (findM)
-import Vulkan.CStruct.Extends (SomeStruct(SomeStruct))
-import Vulkan.Core10
-import Vulkan.Core10.Enums.Result (Result(..))
-import Vulkan.Extensions.VK_EXT_debug_utils
-import Vulkan.Extensions.VK_KHR_surface
-import Vulkan.Extensions.VK_KHR_swapchain
-import Vulkan.Extensions.VK_KHR_shader_non_semantic_info
-import Vulkan.Extensions.VK_EXT_validation_features
-import Vulkan.Utils.Debug (debugCallbackPtr)
-import Vulkan.Version
-import Vulkan.Zero (Zero(..))
-import VulkanMemoryAllocator (Allocator(..), AllocatorCreateInfo(..), withAllocator)
-import qualified Data.ByteString as B
-import qualified Data.Vector as V
-
-import Control.Monad
-import Control.Exception
 import Data.Bits ((.|.), Bits(..))
+import Data.Foldable.Extra (findM)
 import Data.Functor ((<&>))
 import Data.List (maximumBy, nub)
 import Data.Maybe (fromJust, isJust)
 import Data.Ord (comparing)
 import Data.Traversable (for)
 import Data.Word (Word32(..))
+import Vulkan.CStruct.Extends (SomeStruct(SomeStruct))
+import Vulkan.Core10
+import Vulkan.Core10.Enums.Result (Result(..))
+import Vulkan.Extensions.VK_EXT_debug_utils
+import Vulkan.Extensions.VK_EXT_validation_features
+import Vulkan.Extensions.VK_KHR_shader_non_semantic_info
+import Vulkan.Extensions.VK_KHR_surface
+import Vulkan.Extensions.VK_KHR_swapchain
+import Vulkan.Utils.Debug (debugCallbackPtr)
+import Vulkan.Version
+import Vulkan.Zero (Zero(..))
+import VulkanMemoryAllocator (Allocator(..), AllocatorCreateInfo(..), withAllocator)
+import qualified Data.ByteString as B
+import qualified Data.Vector as V
 
 -- Constants
 enabledLayers :: V.Vector B.ByteString
@@ -54,13 +56,13 @@ debugMsgTypes
       DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
     ]
 
-withVulkanInstance
+withInstanceHandles
   :: MonadResource m
   => FilePath
   -> Instance
   -> SurfaceKHR
-  -> m VulkanHandles
-withVulkanInstance dataDir instance' surface = do
+  -> m InstanceHandles
+withInstanceHandles dataDir instance' surface = do
   PhysicalDeviceDetails{..} <- choosePhysicalDevice instance' surface
   device <- withDevice' ppdPhysicalDevice [ppdGraphicsFamilyIndex, ppdPresentFamilyIndex]
   allocator <- withAllocator' instance' ppdPhysicalDevice device
@@ -68,7 +70,7 @@ withVulkanInstance dataDir instance' surface = do
   presentQueue <- getDeviceQueue device ppdPresentFamilyIndex 0
   commandPool <- withCommandPool' device ppdGraphicsFamilyIndex
 
-  return VulkanHandles
+  return InstanceHandles
     { vhDataDir = dataDir,
       vhInstance = instance',
       vhPhysicalDevice = ppdPhysicalDevice,
@@ -84,11 +86,11 @@ withVulkanInstance dataDir instance' surface = do
       vhCommandPool = commandPool
     }
 
-withInstance'
+withVulkanInstance
   :: MonadResource m
   => V.Vector B.ByteString -- ^ required window extensions
   -> m Instance
-withInstance' exts = do
+withVulkanInstance exts = do
   let instanceCreateInfo = zero
         { next = (debugMessengerInfo, (validationFeatures, ())),
           applicationInfo = Just applicationInfo,

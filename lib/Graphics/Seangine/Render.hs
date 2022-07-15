@@ -23,7 +23,7 @@ import Vulkan.Zero (Zero(..))
 import VulkanMemoryAllocator (withMappedMemory)
 import qualified Data.Vector as V
 
-recordCommandBuffer :: Frame -> Framebuffer -> CmdT Vulkan ()
+recordCommandBuffer :: Frame -> Framebuffer -> CmdT SeangineInstance ()
 recordCommandBuffer Frame{..} framebuffer = do
   commandBuffer <- getCommandBuffer
 
