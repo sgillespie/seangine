@@ -19,9 +19,11 @@ import Data.Maybe (fromJust, isJust)
 import Data.Ord (comparing)
 import Data.Traversable (for)
 import Data.Word (Word32(..))
+import Foreign (castFunPtr)
 import Vulkan.CStruct.Extends (SomeStruct(SomeStruct))
 import Vulkan.Core10
 import Vulkan.Core10.Enums.Result (Result(..))
+import Vulkan.Dynamic (DeviceCmds(..), InstanceCmds(..))
 import Vulkan.Extensions.VK_EXT_debug_utils
 import Vulkan.Extensions.VK_EXT_validation_features
 import Vulkan.Extensions.VK_KHR_shader_non_semantic_info
@@ -30,9 +32,9 @@ import Vulkan.Extensions.VK_KHR_swapchain
 import Vulkan.Utils.Debug (debugCallbackPtr)
 import Vulkan.Version
 import Vulkan.Zero (Zero(..))
-import VulkanMemoryAllocator (Allocator(..), AllocatorCreateInfo(..), withAllocator)
 import qualified Data.ByteString as B
 import qualified Data.Vector as V
+import qualified VulkanMemoryAllocator as VMA
 
 -- Constants
 enabledLayers :: V.Vector B.ByteString
@@ -209,16 +211,25 @@ withAllocator'
   => Instance
   -> PhysicalDevice
   -> Device
-  -> m Allocator
+  -> m VMA.Allocator
 withAllocator' instance' physicalDevice device
-  = snd <$> withAllocator allocInfo allocate
+  = snd <$> VMA.withAllocator allocInfo allocate
   where allocInfo = zero
-          { physicalDevice = physicalDeviceHandle physicalDevice,
-            device = deviceHandle device,
-            instance' = instanceHandle instance'
+          { VMA.physicalDevice = physicalDeviceHandle physicalDevice,
+            VMA.device = deviceHandle device,
+            VMA.instance' = instanceHandle instance',
+            VMA.vulkanFunctions = Just $ vulkanFunctions' instance' device
           }
 
 withCommandPool' :: MonadResource m => Device -> Word32 -> m CommandPool
 withCommandPool' device queueFamilyIndex
   = snd <$> withCommandPool device createInfo Nothing allocate
   where createInfo = CommandPoolCreateInfo zero queueFamilyIndex
+
+vulkanFunctions' :: Instance -> Device -> VMA.VulkanFunctions
+vulkanFunctions' instance' device = zero
+  { VMA.vkGetInstanceProcAddr = castFunPtr pVkGetInstanceProcAddr,
+    VMA.vkGetDeviceProcAddr = castFunPtr pVkGetDeviceProcAddr
+  }
+  where Instance _ InstanceCmds{..} = instance'
+        Device _ DeviceCmds{..} = device

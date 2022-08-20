@@ -36,7 +36,7 @@ library
         Graphics.Seangine.Frame.SwapchainDetails
         Graphics.Seangine.Internal.Utils
     build-depends:
-        base ^>=4.14.3.0,
+        base ^>=4.15.1.0,
         bytestring,
         extra,
         linear,
@@ -66,7 +66,7 @@ library
 executable seangine
     main-is:          Main.hs
     build-depends:
-        base ^>=4.14.3.0,
+        base ^>=4.15.1.0,
         extra,
         resourcet,
         seangine,
@@ -94,7 +94,7 @@ test-suite seangine-test
     hs-source-dirs:   test
     main-is:          Spec.hs
     build-depends:
-        base ^>=4.14.3.0,
+        base ^>=4.15.1.0,
         hspec,
         resourcet,
         seangine,

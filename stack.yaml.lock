@@ -5,29 +5,29 @@
 
 packages:
 - completed:
-    hackage: VulkanMemoryAllocator-0.5.1@sha256:1322273db54e605e5c76c995b4c9730cf7033c94521b563423fa5be541556684,3066
     pantry-tree:
+      sha256: 52aa49156aba89629b4fdfd1266ad685a094f2559574265547ea8b17991b546f
       size: 528
-      sha256: 5927b1927e4f553764e8ca890bc5fd79fefec87930795a366a2df998818483e1
+    hackage: VulkanMemoryAllocator-0.10@sha256:037e11b658b3099993a3f38f287faf4ed9ac644ac2ec74788422d668bb70119d,3067
   original:
-    hackage: VulkanMemoryAllocator-0.5.1
+    hackage: VulkanMemoryAllocator-0.10
 - completed:
-    hackage: vulkan-3.10.3@sha256:55d004cdf1658aa0c1894d7db53ffb592e15752bfd9219ebca1db74d06566946,25143
     pantry-tree:
-      size: 69337
-      sha256: a8c85009c8c117c36355ccaceb405c102e124a229fd3ad8fa22937b17c84b239
+      sha256: f29b633b0fd388baab9bf7afc0b4ee17b1662341af05630b3391e4da238aefc4
+      size: 79247
+    hackage: vulkan-3.17@sha256:d7e57f4f77de39c0fd9447606c63fb7f5d26af5d1d0545e714dbf4019c566e5b,29740
   original:
-    hackage: vulkan-3.10.3
+    hackage: vulkan-3.17
 - completed:
-    hackage: vulkan-utils-0.5.0.1@sha256:cd62b515e2d2015d2863895e7269a848fe2bfb8cb20db8e37bc81ce963b4abfe,3956
     pantry-tree:
+      sha256: b9680c8a57d8d630ff362d4eabc7b81b6d2567d8bcebb14075156b9eb847928d
       size: 2225
-      sha256: 5aad18d0e01af5c73101a28547baf30cf6d674d8101268b7422e1a733e662d2c
+    hackage: vulkan-utils-0.5.7@sha256:cca84cb1b3964d2fe45b3438a527bc86f6cc370354762c1395c9b8481a7308cc,3956
   original:
-    hackage: vulkan-utils-0.5.0.1
+    hackage: vulkan-utils-0.5.7
 snapshots:
 - completed:
-    size: 586296
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/18.yaml
-    sha256: 63539429076b7ebbab6daa7656cfb079393bf644971156dc349d7c0453694ac2
-  original: lts-18.18
+    sha256: a95a93bcb7132bf5f8ad3356998e223947852f57d4da63e0e145870ea90d9d18
+    size: 619170
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/19.yaml
+  original: lts-19.19
