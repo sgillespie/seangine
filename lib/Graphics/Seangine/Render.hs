@@ -5,6 +5,7 @@ module Graphics.Seangine.Render
 
 import Graphics.Seangine.Monad
 import Graphics.Seangine.Frame
+import Graphics.Seangine.Scene
 import Graphics.Seangine.Internal.Utils (oneSecond, throwIfUnsuccessful)
 
 import Control.Monad.IO.Unlift
@@ -40,10 +41,7 @@ recordCommandBuffer Frame{..} framebuffer = do
             DepthStencil $ ClearDepthStencilValue 1 0
           ]
 
-      nodes = fScene ^. _nodes
-      meshIds = mapM (^. _nodeMeshId) nodes
-      meshes = maybe [] (map ((fScene ^. _meshes) !!)) meshIds
-      primitives' = concatMap (^. _meshPrimitives) meshes
+      primitives' = fScene ^. _allMeshPrimitives
       indices = concatMap (^. _meshPrimitiveIndices) primitives'
 
   cmdUseRenderPass commandBuffer renderPassBeginInfo SUBPASS_CONTENTS_INLINE $ do

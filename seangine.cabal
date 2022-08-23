@@ -29,6 +29,7 @@ library
         Graphics.Seangine.Monad.Frame,
         Graphics.Seangine.Monad.Instance,
         Graphics.Seangine.Render,
+        Graphics.Seangine.Scene,
         Graphics.Seangine.Window,
         Graphics.Seangine.Window.SDL
     other-modules:

@@ -20,6 +20,7 @@ import Graphics.Seangine.Internal.Utils (throwIfUnsuccessful)
 import Graphics.Seangine.Monad
 import Graphics.Seangine.Monad.Frame
 import Graphics.Seangine.Window
+import Graphics.Seangine.Scene
 
 import Control.Monad (forM)
 import Control.Monad.IO.Class (liftIO)
@@ -57,7 +58,7 @@ withVulkanFrame window surface scene = do
 
   start <- liftIO getMonotonicTime
 
-  let meshPrimitives = getMeshPrimitives scene
+  let meshPrimitives = scene ^. _allMeshPrimitives
       indices = concatMap (^. _meshPrimitiveIndices) meshPrimitives
       positions = concatMap (^. _meshPrimitivePositions) meshPrimitives
       vertices = map (\pos -> Vertex pos (V3 1 0 0) (V2 0 0)) positions
@@ -109,13 +110,6 @@ withCommandBuffers' Frame{..} = do
         }
   
   snd <$> withCommandBuffers device commandBufferAllocateInfo allocate
-
-getMeshPrimitives :: Scene -> [MeshPrimitive]
-getMeshPrimitives scene
-  = let nodes = scene ^. _nodes
-        meshIds = mapM (^. _nodeMeshId) nodes
-        meshes = maybe [] (map ((scene ^. _meshes) !!)) meshIds
-    in concatMap (^. _meshPrimitives) meshes
 
 withImageViews :: SwapchainDetails -> SeangineInstance (V.Vector ImageView)
 withImageViews SwapchainDetails{..} = do
