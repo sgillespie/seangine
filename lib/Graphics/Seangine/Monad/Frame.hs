@@ -1,6 +1,7 @@
 module Graphics.Seangine.Monad.Frame
   ( Frame(..),
     MonadFrame(..),
+    Scene(..),
     SeangineFrame(..),
     allocateVulkan,
     allocateVulkan_,
@@ -14,6 +15,7 @@ import Control.Monad.Trans.Reader
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Resource
+import Text.GLTF.Loader (Gltf(..))
 import Data.Vector (Vector())
 import Data.Word (Word32(), Word64())
 import Vulkan.Core10
@@ -28,9 +30,12 @@ class Monad m => MonadFrame m where
 instance MonadFrame m => MonadFrame (ReaderT r m) where
   getFrame = lift getFrame
 
+type Scene = Gltf
+
 data Frame = Frame
   { fIndex :: Word64,
     fStartTime :: Double,
+    fScene :: Scene,
     fSurface :: SurfaceKHR,
     fSwapchain :: SwapchainKHR,
     fImageExtent :: Extent2D,

@@ -1,6 +1,8 @@
 resolver: lts-19.19
 
 extra-deps:
+  - gltf-codec-0.1.0.4
+  - gltf-loader-0.1.0.0
   - VulkanMemoryAllocator-0.10
   - vulkan-3.17
   - vulkan-utils-0.5.7

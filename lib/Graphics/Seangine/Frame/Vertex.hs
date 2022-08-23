@@ -15,6 +15,7 @@ data Vertex = Vertex
     color :: V3 Float,
     textureCoordinate :: V2 Float
   }
+  deriving (Show)
 
 instance Zero Vertex where
   zero = Vertex zero zero zero

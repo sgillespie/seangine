@@ -1,8 +1,6 @@
 module Graphics.Seangine.Frame
   ( withVulkanFrame,
     withCommandBuffers',
-    vertices,
-    vertexIndices,
 
     module Graphics.Seangine.Frame.UniformBufferObject,
     module Graphics.Seangine.Frame.Vertex,
@@ -28,6 +26,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Reader (ask)
 import Control.Monad.Trans.Resource
 import Data.Bits
+import Data.Maybe (fromJust)
 import Data.Traversable (for)
 import Data.Word (Word32())
 import Foreign.Marshal.Array (pokeArray)
@@ -36,6 +35,8 @@ import Foreign.Storable (Storable(..))
 import Foreign.Ptr (castPtr)
 import GHC.Clock (getMonotonicTime)
 import Linear (V2(..), V3(..))
+import Lens.Micro
+import Text.GLTF.Loader
 import Vulkan.CStruct.Extends (SomeStruct(..))
 import Vulkan.Core10
 import Vulkan.Extensions.VK_KHR_surface (SurfaceKHR())
@@ -44,51 +45,41 @@ import Vulkan.Zero (Zero(..))
 import qualified VulkanMemoryAllocator as VMA
 import qualified Data.Vector as V
 
-vertices :: [Vertex]
-vertices
-  = [ Vertex (V3 (-0.5) (-0.5) 0) (V3 1 0 0) (V2 1 0),
-      Vertex (V3   0.5  (-0.5) 0) (V3 0 1 0) (V2 0 0),
-      Vertex (V3   0.5    0.5  0) (V3 0 0 1) (V2 0 1),
-      Vertex (V3 (-0.5)   0.5  0) (V3 1 1 1) (V2 1 1)
-    ]
-
-vertexIndices :: [CUShort]
-vertexIndices
-  = [ 0, 1,
-      2, 2,
-      3, 0
-    ]
-
 withVulkanFrame
   :: WindowSystem system
   => Window system window
   -> SurfaceKHR
+  -> Scene
   -> SeangineInstance Frame
-withVulkanFrame window surface = do
-  device <- getDevice
+withVulkanFrame window surface scene = do
   handles <- SeangineInstance ask
   allocator <- getAllocator
 
   start <- liftIO getMonotonicTime
-  
+
+  let meshPrimitives = getMeshPrimitives scene
+      indices = concatMap (^. _meshPrimitiveIndices) meshPrimitives
+      positions = concatMap (^. _meshPrimitivePositions) meshPrimitives
+      vertices = map (\pos -> Vertex pos (V3 1 0 0) (V2 0 0)) positions
+
   swapchainDetails@SwapchainDetails{..} <- withSwapchainDetails window surface
   imageViews <- withImageViews swapchainDetails
   GraphicsPipelineDetails{..} <- withGraphicsPipelineDetails swapchainDetails
   depthImageView <- withDepthImageView swapchainDetails
   framebuffers <- withFramebuffers imageViews depthImageView renderPass sdExtent
   (imageAvailable, renderFinished) <- withSemaphores
-  vertexBuffer <- withVertexBuffer
-  indexBuffer <- withIndexBuffer
+  vertexBuffer <- withVertexBuffer vertices
+  indexBuffer <- withIndexBuffer indices
   uniformBuffers <- withUniformBuffer imageViews
   resources <- allocate createInternalState closeInternalState
   descriptorSets <-
     withDescriptorSets' imageViews (V.map fst uniformBuffers) descriptorSetLayout
   fence <- withFence'
-    
   
   return Frame
     { fIndex = 0,
       fStartTime = start,
+      fScene = scene,
       fSurface = surface,
       fSwapchain = sdSwapchain,
       fImageExtent = sdExtent,
@@ -118,6 +109,13 @@ withCommandBuffers' Frame{..} = do
         }
   
   snd <$> withCommandBuffers device commandBufferAllocateInfo allocate
+
+getMeshPrimitives :: Scene -> [MeshPrimitive]
+getMeshPrimitives scene
+  = let nodes = scene ^. _nodes
+        meshIds = mapM (^. _nodeMeshId) nodes
+        meshes = maybe [] (map ((scene ^. _meshes) !!)) meshIds
+    in concatMap (^. _meshPrimitives) meshes
 
 withImageViews :: SwapchainDetails -> SeangineInstance (V.Vector ImageView)
 withImageViews SwapchainDetails{..} = do
@@ -195,19 +193,20 @@ withDepthImage SwapchainDetails{..} = do
 
   return depthImage
 
-withVertexBuffer :: SeangineInstance Buffer
-withVertexBuffer = do
+withVertexBuffer :: [Vertex] -> SeangineInstance Buffer
+withVertexBuffer vertices = do
   let bufferSize = fromIntegral $ sizeOf (zero :: Vertex) * length vertices
       usageFlags = BUFFER_USAGE_VERTEX_BUFFER_BIT
 
   bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags vertices
 
-withIndexBuffer :: SeangineInstance Buffer
-withIndexBuffer = do
+withIndexBuffer :: [Int] -> SeangineInstance Buffer
+withIndexBuffer vertexIndices = do
   let bufferSize = fromIntegral $ sizeOf (undefined :: CUShort) * length vertexIndices
       usageFlags = BUFFER_USAGE_INDEX_BUFFER_BIT
+      vertexIndices' = map (\i -> fromIntegral i :: CUShort) vertexIndices
   
-  bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags vertexIndices
+  bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags vertexIndices'
 
 withUniformBuffer :: V.Vector ImageView -> SeangineInstance (V.Vector (Buffer, VMA.Allocation))
 withUniformBuffer imageViews = do

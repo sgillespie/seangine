@@ -11,6 +11,9 @@ maintainer:         sean@mistersg.net
 copyright:          2021
 category:           Graphics
 
+data-files:
+        data/cube.gltf
+
 library
     exposed-modules:
         Graphics.Seangine,
@@ -40,6 +43,8 @@ library
         bytestring,
         extra,
         linear,
+        gltf-loader,
+        microlens,
         resourcet,
         transformers,
         unliftio-core,
@@ -68,6 +73,8 @@ executable seangine
     build-depends:
         base ^>=4.15.1.0,
         extra,
+        filepath,
+        gltf-loader,
         resourcet,
         seangine,
         vector,

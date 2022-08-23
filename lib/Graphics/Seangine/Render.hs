@@ -15,6 +15,8 @@ import Foreign.Storable
 import Foreign.Ptr (castPtr)
 import GHC.Clock (getMonotonicTime)
 import Linear hiding (zero)
+import Lens.Micro
+import Text.GLTF.Loader
 import Vulkan.Core10 hiding (withMappedMemory)
 import Vulkan.CStruct.Extends (SomeStruct(..))
 import Vulkan.Extensions.VK_KHR_swapchain
@@ -38,6 +40,12 @@ recordCommandBuffer Frame{..} framebuffer = do
             DepthStencil $ ClearDepthStencilValue 1 0
           ]
 
+      nodes = fScene ^. _nodes
+      meshIds = mapM (^. _nodeMeshId) nodes
+      meshes = maybe [] (map ((fScene ^. _meshes) !!)) meshIds
+      primitives' = concatMap (^. _meshPrimitives) meshes
+      indices = concatMap (^. _meshPrimitiveIndices) primitives'
+
   cmdUseRenderPass commandBuffer renderPassBeginInfo SUBPASS_CONTENTS_INLINE $ do
     cmdBindPipeline commandBuffer PIPELINE_BIND_POINT_GRAPHICS fGraphicsPipeline
     cmdBindVertexBuffers commandBuffer 0 [fVertexBuffer] [0]
@@ -50,7 +58,7 @@ recordCommandBuffer Frame{..} framebuffer = do
       [fDescriptorSets 0]
       []
 
-    cmdDrawIndexed commandBuffer (fromIntegral $ length vertexIndices) 1 0 0 0
+    cmdDrawIndexed commandBuffer (fromIntegral $ length indices) 1 0 0 0
 
 renderFrame :: V.Vector CommandBuffer -> SeangineFrame ()
 renderFrame commandBuffers = do
