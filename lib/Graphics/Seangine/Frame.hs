@@ -59,9 +59,9 @@ withVulkanFrame window surface scene = do
   start <- liftIO getMonotonicTime
 
   let meshPrimitives = scene ^. _allMeshPrimitives
-      indices = concatMap (^. _meshPrimitiveIndices) meshPrimitives
-      positions = concatMap (^. _meshPrimitivePositions) meshPrimitives
-      vertices = map (\pos -> Vertex pos (V3 1 0 0) (V2 0 0)) positions
+      indices = V.concatMap (^. _meshPrimitiveIndices) meshPrimitives
+      positions = V.concatMap (^. _meshPrimitivePositions) meshPrimitives
+      vertices = fmap (\pos -> Vertex pos (V3 1 0 0) (V2 0 0)) positions
 
   swapchainDetails@SwapchainDetails{..} <- withSwapchainDetails window surface
   imageViews <- withImageViews swapchainDetails
@@ -187,18 +187,18 @@ withDepthImage SwapchainDetails{..} = do
 
   return depthImage
 
-withVertexBuffer :: [Vertex] -> SeangineInstance Buffer
+withVertexBuffer :: V.Vector Vertex -> SeangineInstance Buffer
 withVertexBuffer vertices = do
   let bufferSize = fromIntegral $ sizeOf (zero :: Vertex) * length vertices
       usageFlags = BUFFER_USAGE_VERTEX_BUFFER_BIT
 
   bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags vertices
 
-withIndexBuffer :: [Int] -> SeangineInstance Buffer
+withIndexBuffer :: V.Vector Int -> SeangineInstance Buffer
 withIndexBuffer vertexIndices = do
   let bufferSize = fromIntegral $ sizeOf (undefined :: CUShort) * length vertexIndices
       usageFlags = BUFFER_USAGE_INDEX_BUFFER_BIT
-      vertexIndices' = map (\i -> fromIntegral i :: CUShort) vertexIndices
+      vertexIndices' = fmap (\i -> fromIntegral i :: CUShort) vertexIndices
   
   bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags vertexIndices'
 

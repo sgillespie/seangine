@@ -68,7 +68,6 @@ library
         TypeFamilies
     hs-source-dirs:   lib
     default-language: Haskell2010
-    build-tool-depends: glslang:glslang
 
 executable seangine
     main-is:          Main.hs

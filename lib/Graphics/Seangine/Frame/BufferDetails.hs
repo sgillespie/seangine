@@ -57,7 +57,7 @@ withDeviceLocalBuffer
   :: Storable storable
   => DeviceSize
   -> BufferUsageFlags
-  -> [storable]
+  -> V.Vector storable
   -> SeangineInstance BufferDetails
 withDeviceLocalBuffer bufferSize bufferUsageFlags data' = do
   allocator <- getAllocator
@@ -126,14 +126,14 @@ copyBufferToImage buffer image width height = withOneTimeCommands $ do
 pokeArrayToBuffer
   :: Storable storable
   => BufferDetails
-  -> [storable]
+  -> V.Vector storable
   -> SeangineInstance ()
 pokeArrayToBuffer BufferDetails{..} data' = do
   allocator <- getAllocator
   
   (releaseStagingMemory, stagingMemory) <-
     VMA.withMappedMemory allocator bdAllocation allocate
-  liftIO $ pokeArray (castPtr stagingMemory) data'
+  liftIO $ pokeArray (castPtr stagingMemory) (V.toList data')
   release releaseStagingMemory
 
 withOneTimeCommands :: CmdT SeangineInstance a -> SeangineInstance a
@@ -169,8 +169,8 @@ recordOneTimeCommandBuffer
   :: CommandBuffer
   -> CmdT SeangineInstance a
   -> SeangineInstance a
-recordOneTimeCommandBuffer commandBuffer commands
-  = runCmdT commandBuffer beginInfo commands
+recordOneTimeCommandBuffer commandBuffer
+  = runCmdT commandBuffer beginInfo
   where beginInfo :: CommandBufferBeginInfo '[]
         beginInfo = zero
           { flags = COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT }

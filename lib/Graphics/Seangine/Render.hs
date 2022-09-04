@@ -42,7 +42,7 @@ recordCommandBuffer Frame{..} framebuffer = do
           ]
 
       primitives' = fScene ^. _allMeshPrimitives
-      indices = concatMap (^. _meshPrimitiveIndices) primitives'
+      indices = concatMap (^. _meshPrimitiveIndices . to V.toList) primitives'
 
   cmdUseRenderPass commandBuffer renderPassBeginInfo SUBPASS_CONTENTS_INLINE $ do
     cmdBindPipeline commandBuffer PIPELINE_BIND_POINT_GRAPHICS fGraphicsPipeline

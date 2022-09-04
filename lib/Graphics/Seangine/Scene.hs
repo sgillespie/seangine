@@ -6,14 +6,16 @@ module Graphics.Seangine.Scene
 import Data.Functor.Const
 import Lens.Micro
 import Text.GLTF.Loader
+import qualified Data.Vector as V
 
 type Scene = Gltf
 
-_allMeshPrimitives :: SimpleGetter Gltf [MeshPrimitive]
+_allMeshPrimitives :: SimpleGetter Gltf (V.Vector MeshPrimitive)
 _allMeshPrimitives = to getMeshPrimitives
 
+getMeshPrimitives :: Gltf -> V.Vector MeshPrimitive
 getMeshPrimitives scene
   = let nodes = scene ^. _nodes
         meshIds = mapM (^. _nodeMeshId) nodes
-        meshes = maybe [] (map ((scene ^. _meshes) !!)) meshIds
-    in concatMap (^. _meshPrimitives) meshes
+        meshes = maybe [] (fmap ((scene ^. _meshes) V.!)) meshIds
+    in V.concatMap (^. _meshPrimitives) meshes
