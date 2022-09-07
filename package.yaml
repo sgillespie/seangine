@@ -69,12 +69,11 @@ language: Haskell2010
   
 library:
   other-modules:
-    - Graphics.Seangine.Instance.PhysicalDeviceDetails
-    - Graphics.Seangine.Frame.BufferDetails
-    - Graphics.Seangine.Frame.DescriptorSets
-    - Graphics.Seangine.Frame.GraphicsPipelineDetails
-    - Graphics.Seangine.Frame.SwapchainDetails
-    - Graphics.Seangine.Internal.Utils
+    - Graphics.Seangine.InstanceInit.PhysicalDeviceDetails
+    - Graphics.Seangine.Shared.Utils
+    - Graphics.Seangine.SwapchainInit.BufferDetails
+    - Graphics.Seangine.SwapchainInit.DescriptorSets
+    - Graphics.Seangine.SwapchainInit.SwapchainDetails
   dependencies:
     - bytestring
     - linear

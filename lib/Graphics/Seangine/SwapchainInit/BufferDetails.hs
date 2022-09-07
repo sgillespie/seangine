@@ -1,4 +1,4 @@
-module Graphics.Seangine.Frame.BufferDetails
+module Graphics.Seangine.SwapchainInit.BufferDetails
   ( BufferDetails(..),
     withBufferDetails,
     withDeviceLocalBuffer,

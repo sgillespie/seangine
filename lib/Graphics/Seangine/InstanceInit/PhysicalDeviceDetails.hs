@@ -1,4 +1,4 @@
-module Graphics.Seangine.Instance.PhysicalDeviceDetails
+module Graphics.Seangine.InstanceInit.PhysicalDeviceDetails
   ( PhysicalDeviceDetails(..),
     physicalDeviceDetails,
     isDeviceSuitable,
@@ -6,11 +6,10 @@ module Graphics.Seangine.Instance.PhysicalDeviceDetails
   ) where
 
 import Control.Monad.IO.Unlift (MonadIO(..))
-import Prelude
+import Data.Word (Word32(..))
+import RIO
 import Vulkan.Core10
 import Vulkan.Extensions.VK_KHR_surface
-
-import Data.Word (Word32(..))
 import qualified Data.ByteString as B
 import qualified Data.Vector as V
 

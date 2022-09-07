@@ -1,4 +1,4 @@
-module Graphics.Seangine.Internal.Utils
+module Graphics.Seangine.Shared.Utils
   (mresult,
    throwIfUnsuccessful,
    oneSecond
@@ -6,8 +6,8 @@ module Graphics.Seangine.Internal.Utils
 
 import Graphics.Seangine.Monad.Exception (throwSystemError)
 
-import Prelude
 import Control.Monad.IO.Unlift (MonadIO())
+import Prelude
 import Vulkan.Core10.Enums.Result (Result(..))
 
 mresult :: Monoid m => (Result, m) -> m

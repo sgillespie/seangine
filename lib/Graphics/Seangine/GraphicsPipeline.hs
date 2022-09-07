@@ -1,13 +1,16 @@
-module Graphics.Seangine.Frame.GraphicsPipelineDetails
-  (GraphicsPipelineDetails(..),
-   withGraphicsPipelineDetails) where
+module Graphics.Seangine.GraphicsPipeline
+  (withDescriptorSetLayout',
+   withPipelineLayout',
+   withRenderPass',
+   withGraphicsPipeline'
+  ) where
 
-import Graphics.Seangine.Frame.FragShader (fragShaderCode)
-import Graphics.Seangine.Frame.SwapchainDetails (SwapchainDetails(..))
-import Graphics.Seangine.Frame.Vertex hiding (vertexAttributeDescriptions)
-import Graphics.Seangine.Frame.VertexShader (vertexShaderCode)
+import Graphics.Seangine.GraphicsPipeline.FragShader (fragShaderCode)
+import Graphics.Seangine.GraphicsPipeline.VertexShader (vertexShaderCode)
 import Graphics.Seangine.Monad (MonadInstance(..), SeangineInstance(..))
-import qualified Graphics.Seangine.Frame.Vertex as Vertex
+import Graphics.Seangine.Render.Vertex hiding (vertexAttributeDescriptions)
+import Graphics.Seangine.SwapchainInit.SwapchainDetails (SwapchainDetails(..))
+import qualified Graphics.Seangine.Render.Vertex as Vertex
 
 import Control.Monad.Trans.Resource (allocate)
 import Prelude
@@ -17,27 +20,6 @@ import Vulkan.Zero (Zero(..))
 import Data.Bits (Bits(..))
 import Foreign.Storable (Storable(..))
 import qualified Data.Vector as V
-
-data GraphicsPipelineDetails = GraphicsPipelineDetails
-  { descriptorSetLayout :: DescriptorSetLayout,
-    pipelineLayout :: PipelineLayout,
-    renderPass :: RenderPass,
-    graphicsPipeline :: Pipeline
-  }
-
-withGraphicsPipelineDetails :: SwapchainDetails -> SeangineInstance GraphicsPipelineDetails
-withGraphicsPipelineDetails SwapchainDetails{..} = do
-  descriptorSetLayout <- withDescriptorSetLayout'
-  pipelineLayout <- withPipelineLayout' descriptorSetLayout
-  renderPass <- withRenderPass' sdSurfaceFormat sdDepthFormat
-  graphicsPipeline <- withGraphicsPipeline pipelineLayout renderPass sdExtent
-
-  return $ GraphicsPipelineDetails
-    { descriptorSetLayout = descriptorSetLayout,
-      pipelineLayout = pipelineLayout, 
-      renderPass = renderPass,
-      graphicsPipeline = graphicsPipeline
-    }
 
 withDescriptorSetLayout' :: SeangineInstance DescriptorSetLayout
 withDescriptorSetLayout' = do
@@ -120,8 +102,8 @@ withRenderPass' colorFormat depthFormat = do
 
   snd <$> withRenderPass device createInfo Nothing allocate
 
-withGraphicsPipeline :: PipelineLayout -> RenderPass -> Extent2D -> SeangineInstance Pipeline
-withGraphicsPipeline layout renderPass extent@(Extent2D width height) = do
+withGraphicsPipeline' :: PipelineLayout -> RenderPass -> Extent2D -> SeangineInstance Pipeline
+withGraphicsPipeline' layout renderPass extent@(Extent2D width height) = do
   device <- getDevice
 
   pipelineShaderStages <- withPipelineShaderStages

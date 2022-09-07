@@ -4,9 +4,10 @@ module Graphics.Seangine.Render
   ) where
 
 import Graphics.Seangine.Monad
-import Graphics.Seangine.Frame
+import Graphics.Seangine.Render.UniformBufferObject
+import Graphics.Seangine.Render.Vertex
 import Graphics.Seangine.Scene
-import Graphics.Seangine.Internal.Utils (oneSecond, throwIfUnsuccessful)
+import Graphics.Seangine.Shared.Utils (oneSecond, throwIfUnsuccessful)
 
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Resource

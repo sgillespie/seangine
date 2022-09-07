@@ -1,26 +1,19 @@
-module Graphics.Seangine.Frame
+module Graphics.Seangine.SwapchainInit
   ( withVulkanFrame,
-    withCommandBuffers',
-
-    module Graphics.Seangine.Frame.UniformBufferObject,
-    module Graphics.Seangine.Frame.Vertex,
-    module Graphics.Seangine.Frame.VertexShader,
-    module Graphics.Seangine.Frame.FragShader
+    withCommandBuffers'
   ) where
 
-import Graphics.Seangine.Frame.BufferDetails
-import Graphics.Seangine.Frame.DescriptorSets (withDescriptorSets')
-import Graphics.Seangine.Frame.FragShader
-import Graphics.Seangine.Frame.GraphicsPipelineDetails
-import Graphics.Seangine.Frame.SwapchainDetails
-import Graphics.Seangine.Frame.UniformBufferObject
-import Graphics.Seangine.Frame.Vertex
-import Graphics.Seangine.Frame.VertexShader
-import Graphics.Seangine.Internal.Utils (throwIfUnsuccessful)
+import Graphics.Seangine.GraphicsPipeline
 import Graphics.Seangine.Monad
 import Graphics.Seangine.Monad.Frame
-import Graphics.Seangine.Window
+import Graphics.Seangine.Render.UniformBufferObject
+import Graphics.Seangine.Render.Vertex
 import Graphics.Seangine.Scene
+import Graphics.Seangine.Shared.Utils (throwIfUnsuccessful)
+import Graphics.Seangine.SwapchainInit.BufferDetails
+import Graphics.Seangine.SwapchainInit.DescriptorSets (withDescriptorSets')
+import Graphics.Seangine.SwapchainInit.SwapchainDetails
+import Graphics.Seangine.Window
 
 import Control.Monad (forM)
 import Control.Monad.IO.Class (liftIO)
@@ -66,7 +59,11 @@ withVulkanFrame window surface scene = do
 
   swapchainDetails@SwapchainDetails{..} <- withSwapchainDetails window surface
   imageViews <- withImageViews swapchainDetails
-  GraphicsPipelineDetails{..} <- withGraphicsPipelineDetails swapchainDetails
+  descriptorSetLayout <- withDescriptorSetLayout'
+  pipelineLayout <- withPipelineLayout' descriptorSetLayout
+  renderPass <- withRenderPass' sdSurfaceFormat sdDepthFormat
+  graphicsPipeline <- withGraphicsPipeline' pipelineLayout renderPass sdExtent
+  
   depthImageView <- withDepthImageView swapchainDetails
   framebuffers <- withFramebuffers imageViews depthImageView renderPass sdExtent
   (imageAvailable, renderFinished) <- withSemaphores

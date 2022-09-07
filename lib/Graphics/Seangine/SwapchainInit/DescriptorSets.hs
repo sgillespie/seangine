@@ -1,8 +1,8 @@
-module Graphics.Seangine.Frame.DescriptorSets
+module Graphics.Seangine.SwapchainInit.DescriptorSets
   (withDescriptorSets') where
 
-import Graphics.Seangine.Frame.UniformBufferObject (UniformBufferObject(..))
 import Graphics.Seangine.Monad (MonadInstance(..), SeangineInstance)
+import Graphics.Seangine.Render.UniformBufferObject (UniformBufferObject(..))
 
 import Control.Monad.Trans.Resource (allocate)
 import Data.Word (Word32())

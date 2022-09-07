@@ -1,11 +1,11 @@
-module Graphics.Seangine.Instance
+module Graphics.Seangine.InstanceInit
   ( withInstanceHandles,
     withVulkanInstance
   ) where
 
 import Graphics.Seangine.Monad
-import Graphics.Seangine.Instance.PhysicalDeviceDetails
-import Graphics.Seangine.Internal.Utils (mresult)
+import Graphics.Seangine.InstanceInit.PhysicalDeviceDetails
+import Graphics.Seangine.Shared.Utils (mresult)
 
 import Control.Exception
 import Control.Monad
@@ -20,7 +20,7 @@ import Data.Ord (comparing)
 import Data.Traversable (for)
 import Data.Word (Word32(..))
 import Foreign (castFunPtr)
-import Prelude
+import RIO
 import Vulkan.CStruct.Extends (SomeStruct(SomeStruct))
 import Vulkan.Core10
 import Vulkan.Core10.Enums.Result (Result(..))

@@ -1,5 +1,5 @@
 {-# LANGUAGE ExistentialQuantification #-}
-module Graphics.Seangine.Frame.Vertex
+module Graphics.Seangine.Render.Vertex
  ( Vertex(..),
    vertexAttributeDescriptions
  ) where
