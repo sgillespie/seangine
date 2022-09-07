@@ -1,0 +1,74 @@
+name: seangine
+version: 0.2.0.0
+synopsis: A Vulkan renderer by and for Sean Gillespie
+description: A Vulkan renderer by and for Sean Gillespie
+homepage: https://github.com/sgillespie/seangine
+license: MIT
+license-file: LICENSE
+author: Sean D Gillespie
+maintainer: sean@mistersg.net
+copyright: "2021"
+category: Graphics
+
+data-files:
+  - data/cube.gltf
+
+build-depends:
+  - base
+  - extra
+  - gltf-loader
+  - resourcet
+  - vector
+  - vulkan
+
+default-extensions:
+  - DataKinds
+  - DerivingStrategies
+  - DuplicateRecordFields
+  - GeneralizedNewtypeDeriving
+  - LambdaCase
+  - NumDecimals
+  - OverloadedStrings
+  - OverloadedLists
+  - RecordWildCards
+  - TypeFamilies
+
+defaultlanguage: Haskell2010
+  
+library:
+  other-modules:
+    - Graphics.Seangine.Instance.PhysicalDeviceDetails
+    - Graphics.Seangine.Frame.BufferDetails
+    - Graphics.Seangine.Frame.DescriptorSets
+    - Graphics.Seangine.Frame.GraphicsPipelineDetails
+    - Graphics.Seangine.Frame.SwapchainDetails
+    - Graphics.Seangine.Internal.Utils
+  build-depends:
+    - bytestring
+    - linear
+    - microlens
+    - transformers
+    - unliftio-core
+    - sdl2
+    - text
+    - vulkan-utils
+    - VulkanMemoryAllocator
+  hs-source-dirs: lib
+
+executables:
+  seangine:
+    main-is: Main.hs
+    build-depends:
+      - filepath
+      - seangine
+    hs-source-dirs: app
+    default-language: Haskell2010
+
+test-suites:
+  seangine-test:
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: Spec.hs
+    build-depends:
+      - hspec
+    build-tool-depends: hspec-discover:hspec-discover
