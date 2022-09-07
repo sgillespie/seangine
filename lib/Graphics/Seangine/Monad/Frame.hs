@@ -14,6 +14,7 @@ import Control.Monad.Trans.Reader
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Resource
+import Prelude
 import Text.GLTF.Loader (Gltf(..))
 import Data.Vector (Vector())
 import Data.Word (Word32(), Word64())

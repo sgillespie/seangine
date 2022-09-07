@@ -17,6 +17,7 @@ import Foreign.Ptr (castPtr)
 import GHC.Clock (getMonotonicTime)
 import Linear hiding (zero)
 import Lens.Micro
+import Prelude
 import Text.GLTF.Loader
 import Vulkan.Core10 hiding (withMappedMemory)
 import Vulkan.CStruct.Extends (SomeStruct(..))

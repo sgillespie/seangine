@@ -10,6 +10,7 @@ import Graphics.Seangine.Monad (MonadInstance(..), SeangineInstance(..))
 import qualified Graphics.Seangine.Frame.Vertex as Vertex
 
 import Control.Monad.Trans.Resource (allocate)
+import Prelude
 import Vulkan.CStruct.Extends (SomeStruct(..))
 import Vulkan.Core10
 import Vulkan.Zero (Zero(..))

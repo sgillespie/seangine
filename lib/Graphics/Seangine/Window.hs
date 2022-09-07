@@ -20,6 +20,7 @@ import Control.Monad ((>=>), void)
 import Control.Monad.IO.Class (MonadIO(..))
 import Foreign.C.String  (peekCString)
 import Foreign.Ptr (castPtr)
+import Prelude
 import qualified Data.ByteString as B
 import qualified Data.Vector as V
 

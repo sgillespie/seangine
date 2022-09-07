@@ -13,27 +13,59 @@ category: Graphics
 data-files:
   - data/cube.gltf
 
-build-depends:
+dependencies:
   - base
   - extra
   - gltf-loader
   - resourcet
+  - rio
   - vector
   - vulkan
 
 default-extensions:
+  - BangPatterns
+  - BinaryLiterals
+  - ConstraintKinds
   - DataKinds
+  - DefaultSignatures
+  - DeriveDataTypeable
+  - DeriveFoldable
+  - DeriveFunctor
+  - DeriveGeneric
+  - DeriveTraversable
   - DerivingStrategies
+  - DoAndIfThenElse
   - DuplicateRecordFields
+  - EmptyDataDecls
+  - ExistentialQuantification
+  - FlexibleContexts
+  - FlexibleInstances
+  - FunctionalDependencies
+  - GADTs
   - GeneralizedNewtypeDeriving
+  - InstanceSigs
+  - KindSignatures
   - LambdaCase
+  - MultiParamTypeClasses
+  - MultiWayIf
+  - NamedFieldPuns
+  - NoImplicitPrelude
   - NumDecimals
-  - OverloadedStrings
   - OverloadedLists
+  - OverloadedStrings
+  - PartialTypeSignatures
+  - PatternGuards
+  - PolyKinds
+  - RankNTypes
   - RecordWildCards
+  - ScopedTypeVariables
+  - StandaloneDeriving
+  - TupleSections
   - TypeFamilies
+  - TypeSynonymInstances
+  - ViewPatterns
 
-defaultlanguage: Haskell2010
+language: Haskell2010
   
 library:
   other-modules:
@@ -43,7 +75,7 @@ library:
     - Graphics.Seangine.Frame.GraphicsPipelineDetails
     - Graphics.Seangine.Frame.SwapchainDetails
     - Graphics.Seangine.Internal.Utils
-  build-depends:
+  dependencies:
     - bytestring
     - linear
     - microlens
@@ -53,22 +85,20 @@ library:
     - text
     - vulkan-utils
     - VulkanMemoryAllocator
-  hs-source-dirs: lib
+  source-dirs: lib
 
 executables:
   seangine:
-    main-is: Main.hs
-    build-depends:
+    main: Main.hs
+    dependencies:
       - filepath
       - seangine
-    hs-source-dirs: app
-    default-language: Haskell2010
+    source-dirs: app
 
-test-suites:
+tests:
   seangine-test:
-    type: exitcode-stdio-1.0
-    hs-source-dirs: test
-    main-is: Spec.hs
-    build-depends:
+    source-dirs: test
+    main: Spec.hs
+    dependencies:
       - hspec
-    build-tool-depends: hspec-discover:hspec-discover
+    build-tools: hspec-discover:hspec-discover

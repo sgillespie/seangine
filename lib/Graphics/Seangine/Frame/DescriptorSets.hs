@@ -7,6 +7,7 @@ import Graphics.Seangine.Monad (MonadInstance(..), SeangineInstance)
 import Control.Monad.Trans.Resource (allocate)
 import Data.Word (Word32())
 import Foreign.Storable (Storable(..))
+import Prelude
 import Vulkan.CStruct.Extends (SomeStruct(..))
 import Vulkan.Core10
 import Vulkan.Zero (Zero(..))

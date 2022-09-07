@@ -20,6 +20,7 @@ import Data.Ord (comparing)
 import Data.Traversable (for)
 import Data.Word (Word32(..))
 import Foreign (castFunPtr)
+import Prelude
 import Vulkan.CStruct.Extends (SomeStruct(SomeStruct))
 import Vulkan.Core10
 import Vulkan.Core10.Enums.Result (Result(..))

@@ -6,6 +6,7 @@ module Graphics.Seangine.Internal.Utils
 
 import Graphics.Seangine.Monad.Exception (throwSystemError)
 
+import Prelude
 import Control.Monad.IO.Unlift (MonadIO())
 import Vulkan.Core10.Enums.Result (Result(..))
 

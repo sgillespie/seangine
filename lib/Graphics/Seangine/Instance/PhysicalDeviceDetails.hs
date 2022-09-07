@@ -6,6 +6,7 @@ module Graphics.Seangine.Instance.PhysicalDeviceDetails
   ) where
 
 import Control.Monad.IO.Unlift (MonadIO(..))
+import Prelude
 import Vulkan.Core10
 import Vulkan.Extensions.VK_KHR_surface
 

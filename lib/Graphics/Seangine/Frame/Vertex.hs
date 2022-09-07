@@ -7,6 +7,7 @@ module Graphics.Seangine.Frame.Vertex
 import Foreign.Ptr
 import Foreign.Storable (Storable(..))
 import Linear (V2(..), V3(..))
+import Prelude
 import Vulkan.Core10 hiding (alignment, vertexAttributeDescriptions)
 import Vulkan.Zero (Zero(..))
 

@@ -5,6 +5,7 @@ module Graphics.Seangine.Scene
 
 import Data.Functor.Const
 import Lens.Micro
+import Prelude
 import Text.GLTF.Loader
 import qualified Data.Vector as V
 

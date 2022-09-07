@@ -5,6 +5,7 @@ module Graphics.Seangine.Frame.UniformBufferObject
 import Foreign.Ptr
 import Foreign.Storable
 import Linear hiding (zero)
+import Prelude
 import Vulkan.Zero (Zero(..))
 
 data UniformBufferObject = UniformBufferObject

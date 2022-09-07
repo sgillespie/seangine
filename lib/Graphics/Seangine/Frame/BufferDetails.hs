@@ -17,6 +17,7 @@ import Data.Word (Word32())
 import Foreign.Marshal.Array (pokeArray)
 import Foreign.Ptr (castPtr)
 import Foreign.Storable (Storable(..))
+import Prelude
 import Vulkan.CStruct.Extends (SomeStruct(..))
 import Vulkan.Core10
 import Vulkan.Zero

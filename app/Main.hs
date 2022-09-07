@@ -8,6 +8,7 @@ import Control.Monad.Extra
 import Control.Monad.Trans.Resource
 import Control.Monad.IO.Class
 import Data.String
+import Prelude
 import System.FilePath ((</>))
 import Text.GLTF.Loader
 import Vulkan.Core10

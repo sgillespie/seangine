@@ -37,6 +37,7 @@ import Foreign.Ptr (castPtr)
 import GHC.Clock (getMonotonicTime)
 import Linear (V2(..), V3(..))
 import Lens.Micro
+import Prelude
 import Text.GLTF.Loader
 import Vulkan.CStruct.Extends (SomeStruct(..))
 import Vulkan.Core10

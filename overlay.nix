@@ -16,12 +16,13 @@
       }];
               
       shell.tools = {
-        cabal = {};
-        hlint = {};
-        haskell-language-server = {};
+        cabal = { inherit index-state; };
+        hlint = { inherit index-state; };
+        haskell-language-server = { inherit index-state; };
       };
       
       shell.buildInputs = with pkgs; [
+        watchman
         nixpkgs-fmt
       ];
     };

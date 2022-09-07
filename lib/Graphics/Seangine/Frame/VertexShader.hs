@@ -5,7 +5,7 @@ module Graphics.Seangine.Frame.VertexShader
   ) where
 
 import Vulkan.Utils.ShaderQQ.GLSL.Glslang (vert)
-
+import Prelude
 import Data.ByteString (ByteString())
 
 vertexShaderCode :: ByteString

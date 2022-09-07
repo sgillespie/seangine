@@ -7,6 +7,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Resource
+import Prelude
 import Vulkan.CStruct.Extends
 import Vulkan.Core10
 

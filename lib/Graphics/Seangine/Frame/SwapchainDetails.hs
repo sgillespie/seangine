@@ -8,6 +8,7 @@ import Graphics.Seangine.Monad
 import Graphics.Seangine.Window
 
 import Control.Monad.Trans.Resource (allocate)
+import Prelude
 import Vulkan.Core10
 import Vulkan.Extensions.VK_KHR_swapchain
 import Vulkan.Extensions.VK_KHR_surface (SurfaceCapabilitiesKHR(..), SurfaceFormatKHR(..))

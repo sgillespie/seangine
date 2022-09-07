@@ -4,6 +4,7 @@ module Graphics.Seangine.Frame.FragShader where
 import Vulkan.Utils.ShaderQQ.GLSL.Glslang (frag)
 
 import Data.ByteString (ByteString())
+import Prelude
 
 fragShaderCode :: ByteString
 fragShaderCode

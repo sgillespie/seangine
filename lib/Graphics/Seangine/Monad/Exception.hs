@@ -4,6 +4,7 @@ import Control.Monad.IO.Unlift (MonadIO(..))
 
 import Control.Exception
 import GHC.IO.Exception (IOErrorType(..))
+import Prelude
 import System.IO.Error (mkIOError)
 
 systemError :: String -> IOError

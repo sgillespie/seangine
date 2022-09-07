@@ -8,7 +8,7 @@ import Vulkan.Core10 (Instance(..))
 import Vulkan.Extensions.VK_KHR_surface (SurfaceKHR(..), destroySurfaceKHR)
 import qualified SDL
 import qualified SDL.Event as E
-
+import Prelude
 import Control.Monad.IO.Class (MonadIO(..))
 import Data.Maybe (mapMaybe)
 import Data.Text (pack)
