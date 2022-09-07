@@ -22,3 +22,6 @@ cabal.project.local~
 .HTF/
 .ghc.environment.*
 result
+
+# We use package.yaml
+seangine.cabal
