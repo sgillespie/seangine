@@ -28,7 +28,7 @@ preferredColorSpace :: ColorSpaceKHR
 preferredColorSpace = COLOR_SPACE_SRGB_NONLINEAR_KHR
 
 preferredPresentMode :: PresentModeKHR
-preferredPresentMode = PRESENT_MODE_FIFO_RELAXED_KHR
+preferredPresentMode = PRESENT_MODE_FIFO_KHR
 
 preferredDepthFormats :: [Format]
 preferredDepthFormats

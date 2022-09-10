@@ -1,5 +1,5 @@
 module Graphics.Seangine.SwapchainInit
-  ( withVulkanFrame,
+   ( withVulkanFrame,
     withCommandBuffers'
   ) where
 
@@ -54,8 +54,14 @@ withVulkanFrame window surface scene = do
 
   let meshPrimitives = scene ^. _allMeshPrimitives
       indices = V.concatMap (^. _meshPrimitiveIndices) meshPrimitives
-      positions = V.concatMap (^. _meshPrimitivePositions) meshPrimitives
-      vertices = fmap (\pos -> Vertex pos (V3 1 0 0) (V2 0 0)) positions
+      abs' (V3 x y z) = V3 (abs x) (abs y) (abs z)
+      vertices = V.concatMap
+        (\prim ->
+           V.zipWith
+             (\pos norm -> Vertex pos norm (abs norm))
+             (prim ^. _meshPrimitivePositions)
+             (prim ^. _meshPrimitiveNormals))
+        meshPrimitives
 
   swapchainDetails@SwapchainDetails{..} <- withSwapchainDetails window surface
   imageViews <- withImageViews swapchainDetails
