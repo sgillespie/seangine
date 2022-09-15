@@ -82,6 +82,7 @@ library:
     - microlens
     - microlens-platform
     - transformers
+    - unliftio
     - unliftio-core
     - sdl2
     - text

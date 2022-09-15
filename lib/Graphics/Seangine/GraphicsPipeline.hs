@@ -8,6 +8,7 @@ module Graphics.Seangine.GraphicsPipeline
 import Graphics.Seangine.GraphicsPipeline.FragShader (fragShaderCode)
 import Graphics.Seangine.GraphicsPipeline.VertexShader (vertexShaderCode)
 import Graphics.Seangine.Monad (MonadInstance(..), SeangineInstance(..))
+import Graphics.Seangine.Render.PushConstantObject (PushConstantObject(..))
 import Graphics.Seangine.Render.Vertex hiding (vertexAttributeDescriptions)
 import Graphics.Seangine.SwapchainInit.SwapchainDetails (SwapchainDetails(..))
 import qualified Graphics.Seangine.Render.Vertex as Vertex
@@ -20,87 +21,6 @@ import Vulkan.Zero (Zero(..))
 import Data.Bits (Bits(..))
 import Foreign.Storable (Storable(..))
 import qualified Data.Vector as V
-
-withDescriptorSetLayout' :: SeangineInstance DescriptorSetLayout
-withDescriptorSetLayout' = do
-  device <- getDevice
-  let createInfo = zero
-        { bindings = [uniformLayoutBinding] }
-
-      uniformLayoutBinding = zero
-        { binding = 0,
-          descriptorType = DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-          descriptorCount = 1,
-          stageFlags = SHADER_STAGE_VERTEX_BIT
-        }
-
-  snd <$> withDescriptorSetLayout device createInfo Nothing allocate
-
-withPipelineLayout' :: DescriptorSetLayout -> SeangineInstance PipelineLayout
-withPipelineLayout' setLayout = do
-  device <- getDevice
-  
-  let createInfo :: PipelineLayoutCreateInfo
-      createInfo = zero
-        { setLayouts = [setLayout] }
-  
-  snd <$> withPipelineLayout device createInfo Nothing allocate
-
-withRenderPass' :: Format -> Format -> SeangineInstance RenderPass
-withRenderPass' colorFormat depthFormat = do
-  device <- getDevice
-
-  let createInfo = zero
-        { attachments = [colorAttachment, depthAttachment],
-          subpasses = [subpass],
-          dependencies = [subpassDependency]
-        }
-
-      colorAttachment = zero
-        { format = colorFormat,
-          samples = SAMPLE_COUNT_1_BIT,
-          loadOp = ATTACHMENT_LOAD_OP_CLEAR,
-          storeOp = ATTACHMENT_STORE_OP_STORE,
-          stencilLoadOp = ATTACHMENT_LOAD_OP_DONT_CARE,
-          stencilStoreOp = ATTACHMENT_STORE_OP_DONT_CARE,
-          initialLayout = IMAGE_LAYOUT_UNDEFINED,
-          finalLayout = IMAGE_LAYOUT_PRESENT_SRC_KHR
-        }
-
-      depthAttachment = zero
-        { format = depthFormat,
-          samples = SAMPLE_COUNT_1_BIT,
-          loadOp = ATTACHMENT_LOAD_OP_CLEAR,
-          storeOp = ATTACHMENT_STORE_OP_STORE,
-          stencilLoadOp = ATTACHMENT_LOAD_OP_DONT_CARE,
-          stencilStoreOp = ATTACHMENT_STORE_OP_DONT_CARE,
-          initialLayout = IMAGE_LAYOUT_UNDEFINED,
-          finalLayout = IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-        }
-
-      subpass = zero
-        { pipelineBindPoint = PIPELINE_BIND_POINT_GRAPHICS,
-          colorAttachments = [colorAttachmentRef],
-          depthStencilAttachment = Just depthStencilAttachment
-        }
-
-      subpassDependency = zero
-        { srcSubpass = SUBPASS_EXTERNAL,
-          dstSubpass = 0,
-          srcStageMask
-            = PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-              .|. PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-          dstStageMask
-            = PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-              .|. PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-          dstAccessMask
-            = ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-              .|. ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
-        }
-
-      (colorAttachmentRef, depthStencilAttachment) = subpassAttachmentRefs
-
-  snd <$> withRenderPass device createInfo Nothing allocate
 
 withGraphicsPipeline' :: PipelineLayout -> RenderPass -> Extent2D -> SeangineInstance Pipeline
 withGraphicsPipeline' layout renderPass extent@(Extent2D width height) = do
@@ -172,6 +92,91 @@ withGraphicsPipeline' layout renderPass extent@(Extent2D width height) = do
 
   return . V.head . snd $ pipelines
 
+withDescriptorSetLayout' :: SeangineInstance DescriptorSetLayout
+withDescriptorSetLayout' = do
+  device <- getDevice
+  let createInfo = zero
+        { bindings = [uniformLayoutBinding] }
+
+      uniformLayoutBinding = zero
+        { binding = 0,
+          descriptorType = DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+          descriptorCount = 1,
+          stageFlags = SHADER_STAGE_VERTEX_BIT
+        }
+
+  snd <$> withDescriptorSetLayout device createInfo Nothing allocate
+
+withPipelineLayout' :: DescriptorSetLayout  -> SeangineInstance PipelineLayout
+withPipelineLayout' setLayout = do
+  device <- getDevice
+  
+  let createInfo :: PipelineLayoutCreateInfo
+      createInfo = zero
+        { setLayouts = [setLayout],
+          pushConstantRanges = [pushConstantRange]
+        }
+  
+  snd <$> withPipelineLayout device createInfo Nothing allocate
+
+withRenderPass' :: Format -> Format -> SeangineInstance RenderPass
+withRenderPass' colorFormat depthFormat = do
+  device <- getDevice
+
+  let createInfo = zero
+        { attachments = [colorAttachment, depthAttachment],
+          subpasses = [subpass],
+          dependencies = [subpassDependency]
+        }
+
+      colorAttachment = zero
+        { format = colorFormat,
+          samples = SAMPLE_COUNT_1_BIT,
+          loadOp = ATTACHMENT_LOAD_OP_CLEAR,
+          storeOp = ATTACHMENT_STORE_OP_STORE,
+          stencilLoadOp = ATTACHMENT_LOAD_OP_DONT_CARE,
+          stencilStoreOp = ATTACHMENT_STORE_OP_DONT_CARE,
+          initialLayout = IMAGE_LAYOUT_UNDEFINED,
+          finalLayout = IMAGE_LAYOUT_PRESENT_SRC_KHR
+        }
+
+      depthAttachment = zero
+        { format = depthFormat,
+          samples = SAMPLE_COUNT_1_BIT,
+          loadOp = ATTACHMENT_LOAD_OP_CLEAR,
+          storeOp = ATTACHMENT_STORE_OP_STORE,
+          stencilLoadOp = ATTACHMENT_LOAD_OP_DONT_CARE,
+          stencilStoreOp = ATTACHMENT_STORE_OP_DONT_CARE,
+          initialLayout = IMAGE_LAYOUT_UNDEFINED,
+          finalLayout = IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+        }
+
+      subpass = zero
+        { pipelineBindPoint = PIPELINE_BIND_POINT_GRAPHICS,
+          colorAttachments = [colorAttachmentRef],
+          depthStencilAttachment = Just depthStencilAttachment
+        }
+
+      subpassDependency = zero
+        { srcSubpass = SUBPASS_EXTERNAL,
+          dstSubpass = 0,
+          srcStageMask
+            = PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+              .|. PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+          dstStageMask
+            = PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+              .|. PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+          dstAccessMask
+            = ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+              .|. ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+        }
+
+      (colorAttachmentRef, depthStencilAttachment) = subpassAttachmentRefs
+
+  snd <$> withRenderPass device createInfo Nothing allocate
+
+
+
 subpassAttachmentRefs :: (AttachmentReference, AttachmentReference)
 subpassAttachmentRefs = (colorAttachmentRef, depthStencilAttachment)
   where colorAttachmentRef = zero
@@ -232,6 +237,13 @@ pipelineColorBlendAttachment = zero
         .|. COLOR_COMPONENT_G_BIT
         .|. COLOR_COMPONENT_B_BIT
         .|. COLOR_COMPONENT_A_BIT
+  }
+
+pushConstantRange :: PushConstantRange
+pushConstantRange = zero
+  { offset = 0,
+    size = fromIntegral $ sizeOf (undefined :: PushConstantObject),
+    stageFlags = SHADER_STAGE_VERTEX_BIT
   }
 
 withShaderModules :: SeangineInstance (ShaderModule, ShaderModule)

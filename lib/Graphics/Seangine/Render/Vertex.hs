@@ -4,6 +4,8 @@ module Graphics.Seangine.Render.Vertex
    vertexAttributeDescriptions
  ) where
 
+import Graphics.Seangine.Render.ColumnMajorM44
+
 import Foreign.Ptr
 import Foreign.Storable (Storable(..))
 import Linear (V2(..), V3(..))
@@ -23,9 +25,6 @@ instance Zero Vertex where
 
 instance Zero zero => Zero (V2 zero) where
   zero = V2 zero zero
-
-instance Zero zero => Zero (V3 zero) where
-  zero = V3 zero zero zero
 
 instance Storable Vertex where
   sizeOf _ = calculateOffset [zeroV3, zeroV3, zeroV3]

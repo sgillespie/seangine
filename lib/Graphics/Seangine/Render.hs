@@ -4,6 +4,7 @@ module Graphics.Seangine.Render
   ) where
 
 import Graphics.Seangine.Monad
+import Graphics.Seangine.Render.PushConstantObject (PushConstantObject(..))
 import Graphics.Seangine.Render.UniformBufferObject
 import Graphics.Seangine.Render.Vertex
 import Graphics.Seangine.Scene
@@ -13,14 +14,16 @@ import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Resource
 import Control.Monad.Trans.Reader (ask)
+import Data.Maybe
 import Data.Word
 import Foreign.Storable
-import Foreign.Ptr (castPtr)
+import Foreign.Ptr
 import GHC.Clock (getMonotonicTime)
 import Linear hiding (zero)
 import Lens.Micro
 import Prelude
 import Text.GLTF.Loader
+import UnliftIO.Foreign (allocaBytes, poke)
 import Vulkan.Core10 hiding (withMappedMemory)
 import Vulkan.CStruct.Extends (SomeStruct(..))
 import Vulkan.Extensions.VK_KHR_swapchain
@@ -63,9 +66,19 @@ recordCommandBuffer Frame{..} framebuffer = do
               indices = primitive' ^. _meshPrimitiveIndices
               vertexBuffer = fVertexBuffers Map.! bufferId
               indexBuffer = fIndexBuffers Map.! bufferId
-      
+              pushConstantSize = sizeOf (undefined :: PushConstantObject)
+
           cmdBindVertexBuffers commandBuffer 0 [vertexBuffer] [0]
           cmdBindIndexBuffer commandBuffer indexBuffer 0 INDEX_TYPE_UINT16
+
+          withPushConstant node $ \ptr ->
+            cmdPushConstants
+              commandBuffer
+              fPipelineLayout
+              SHADER_STAGE_VERTEX_BIT
+              0
+              (fromIntegral pushConstantSize)
+              (castPtr ptr)
 
           cmdDrawIndexed commandBuffer (fromIntegral $ length indices) 1 0 0 0
 
@@ -121,7 +134,7 @@ updateUniformBuffer imageIndex = do
       proj = perspective (pi/4) (fromIntegral w / fromIntegral h) 0.1 10
       (V4 pw px py pz) = proj
 
-      rotationAngle = realToFrac $ elapsed * (pi / 2) :: Float
+      rotationAngle = realToFrac $ (elapsed / 4) * (pi / 2) :: Float
       rotationMatrix
         = V3
             (V3 (cos rotationAngle) (-sin rotationAngle) 0)
@@ -129,7 +142,7 @@ updateUniformBuffer imageIndex = do
             (V3 0 0 1)
 
       uniformObject = UniformBufferObject
-        { model = mkTransformationMat rotationMatrix (V3 0 0 0),
+        { model = mkTransformationMat rotationMatrix zero,
           view = lookAt (V3 2 2 2) (V3 0 0 0) (V3 0 0 1),
           projection = V4 pw (-px) py pz
         }
@@ -141,3 +154,29 @@ updateUniformBuffer imageIndex = do
   release unmapMem
 
   return ()
+
+withPushConstant
+  :: (Monad m, MonadUnliftIO m)
+  => Node
+  -> (Ptr PushConstantObject -> m a) -> m a
+withPushConstant node action
+  = allocaBytes pushConstantSize $ withPushConstantPtr node action
+  where pushConstantSize = sizeOf (undefined :: PushConstantObject)
+
+withPushConstantPtr
+  :: (Monad m, MonadUnliftIO m)
+  => Node
+  -> (Ptr PushConstantObject -> m a)
+  -> Ptr PushConstantObject
+  -> m a
+withPushConstantPtr node action ptr
+  = liftIO (poke ptr pushConstant) >> action ptr
+  where rotation = fromMaybe zero (node ^. _nodeRotation . to toQuaternion)
+        translation = fromMaybe zero (node ^. _nodeTranslation)
+        scale = fromMaybe (V3 1 1 1) $ node ^. _nodeScale
+        transMatrix = mkTransformation rotation translation
+        scaleMatrix = m33_to_m44 $ scaled scale
+        pushConstant = PushConstantObject $ transMatrix !*! scaleMatrix
+
+toQuaternion (Just (V4 w x y z)) = Just $ Quaternion w (V3 x y z)
+toQuaternion _ = Nothing

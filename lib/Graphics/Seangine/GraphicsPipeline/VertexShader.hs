@@ -12,6 +12,10 @@ vertexShaderCode
       #version 450
       #extension GL_ARB_separate_shader_objects: enable
 
+      layout(push_constant) uniform constants {
+        mat4 transform;
+      } pushConstants;
+
       layout(binding = 0) uniform UniformBufferObject {
         mat4 model;
         mat4 view;
@@ -29,6 +33,7 @@ vertexShaderCode
           uniformObject.projection *
           uniformObject.view *
           uniformObject.model *
+          pushConstants.transform *
           vec4(inPosition, 1.0);
 
         fragColor = inColor;
