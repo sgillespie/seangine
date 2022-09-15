@@ -17,8 +17,10 @@ dependencies:
   - base
   - extra
   - gltf-loader
+  - hashable
   - resourcet
   - rio
+  - unordered-containers
   - vector
   - vulkan
 
@@ -78,6 +80,7 @@ library:
     - bytestring
     - linear
     - microlens
+    - microlens-platform
     - transformers
     - unliftio-core
     - sdl2

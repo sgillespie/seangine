@@ -15,7 +15,7 @@ import Graphics.Seangine.SwapchainInit.DescriptorSets (withDescriptorSets')
 import Graphics.Seangine.SwapchainInit.SwapchainDetails
 import Graphics.Seangine.Window
 
-import Control.Monad (forM)
+import Control.Monad (forM, forM_)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Reader (ask)
 import Control.Monad.Trans.Resource
@@ -24,12 +24,13 @@ import Data.Maybe (fromJust)
 import Data.Traversable (for)
 import Data.Word (Word32())
 import Foreign.Marshal.Array (pokeArray)
-import Foreign.C.Types (CUShort())
+import Foreign.C.Types
 import Foreign.Storable (Storable(..))
 import Foreign.Ptr (castPtr)
 import GHC.Clock (getMonotonicTime)
 import Linear (V2(..), V3(..))
 import Lens.Micro
+import Lens.Micro.Platform ()
 import Prelude
 import Text.GLTF.Loader
 import Vulkan.CStruct.Extends (SomeStruct(..))
@@ -37,8 +38,10 @@ import Vulkan.Core10
 import Vulkan.Extensions.VK_KHR_surface (SurfaceKHR())
 import Vulkan.Extensions.VK_KHR_swapchain
 import Vulkan.Zero (Zero(..))
-import qualified VulkanMemoryAllocator as VMA
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Vector as V
+import qualified VulkanMemoryAllocator as VMA
+
 
 withVulkanFrame
   :: WindowSystem system
@@ -73,8 +76,8 @@ withVulkanFrame window surface scene = do
   depthImageView <- withDepthImageView swapchainDetails
   framebuffers <- withFramebuffers imageViews depthImageView renderPass sdExtent
   (imageAvailable, renderFinished) <- withSemaphores
-  vertexBuffer <- withVertexBuffer vertices
-  indexBuffer <- withIndexBuffer indices
+  vertexBuffers <- withVertexBuffers scene
+  indexBuffers <- withIndexBuffers scene
   uniformBuffers <- withUniformBuffer imageViews
   resources <- allocate createInternalState closeInternalState
   descriptorSets <-
@@ -94,8 +97,8 @@ withVulkanFrame window surface scene = do
       fGraphicsPipeline = graphicsPipeline,
       fImageAvailable = imageAvailable,
       fRenderFinished = renderFinished,
-      fVertexBuffer = vertexBuffer,
-      fIndexBuffer = indexBuffer,
+      fVertexBuffers = vertexBuffers,
+      fIndexBuffers = indexBuffers,
       fUniformBuffers = uniformBuffers,
       fDescriptorSets = (descriptorSets V.!) . fromIntegral, 
       fResources = resources,
@@ -191,20 +194,33 @@ withDepthImage SwapchainDetails{..} = do
 
   return depthImage
 
-withVertexBuffer :: V.Vector Vertex -> SeangineInstance Buffer
-withVertexBuffer vertices = do
-  let bufferSize = fromIntegral $ sizeOf (zero :: Vertex) * length vertices
-      usageFlags = BUFFER_USAGE_VERTEX_BUFFER_BIT
+withVertexBuffers :: Scene -> SeangineInstance (Map.HashMap MeshPrimitiveId Buffer)
+withVertexBuffers scene = V.foldM addNodeMeshToMap' Map.empty nodes
+  where addNodeMeshToMap' = addNodeMeshToMap createBuffer scene
+        nodes = scene ^. _nodes
+        createBuffer primitive' = do
+          let bufferSize = fromIntegral $ sizeOf (zero :: Vertex) * length vertices
+              usageFlags = BUFFER_USAGE_VERTEX_BUFFER_BIT
 
-  bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags vertices
-
-withIndexBuffer :: V.Vector Int -> SeangineInstance Buffer
-withIndexBuffer vertexIndices = do
-  let bufferSize = fromIntegral $ sizeOf (undefined :: CUShort) * length vertexIndices
-      usageFlags = BUFFER_USAGE_INDEX_BUFFER_BIT
-      vertexIndices' = fmap (\i -> fromIntegral i :: CUShort) vertexIndices
-  
-  bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags vertexIndices'
+              vertices = V.zipWith
+                (\pos norm -> Vertex pos norm (abs norm))
+                (primitive' ^. _meshPrimitivePositions)
+                (primitive' ^. _meshPrimitiveNormals)
+                  
+          bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags vertices
+          
+    
+withIndexBuffers :: Scene -> SeangineInstance (Map.HashMap MeshPrimitiveId Buffer)
+withIndexBuffers scene = V.foldM addNodeMeshToMap' Map.empty nodes
+  where nodes = scene ^. _nodes
+        addNodeMeshToMap' = addNodeMeshToMap createBuffer scene
+        fromIntegral' = CShort . fromIntegral
+        createBuffer primitive' = do
+          let indices = primitive' ^. _meshPrimitiveIndices & each %~ fromIntegral'
+              bufferSize = fromIntegral $ sizeOf (undefined :: CUShort) * length indices
+              usageFlags = BUFFER_USAGE_INDEX_BUFFER_BIT
+                  
+          bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags indices
 
 withUniformBuffer :: V.Vector ImageView -> SeangineInstance (V.Vector (Buffer, VMA.Allocation))
 withUniformBuffer imageViews = do
@@ -223,3 +239,28 @@ withFence' = do
   device <- getDevice
 
   snd <$> withFence device zero Nothing allocate
+
+addNodeMeshToMap
+  :: (MeshPrimitive -> SeangineInstance Buffer)
+  -> Scene
+  -> Map.HashMap MeshPrimitiveId Buffer
+  -> Node
+  -> SeangineInstance (Map.HashMap MeshPrimitiveId Buffer)
+addNodeMeshToMap createBuffer scene buffers node = do
+  let mesh = node ^. _nodeMesh scene
+  maybe (return buffers) (addMeshPrimitivesToMap createBuffer buffers) mesh
+
+addMeshPrimitivesToMap
+  :: (MeshPrimitive -> SeangineInstance Buffer)
+  -> Map.HashMap MeshPrimitiveId Buffer
+  -> (Int, Mesh)
+  -> SeangineInstance (Map.HashMap MeshPrimitiveId Buffer)
+addMeshPrimitivesToMap createBuffer buffers (meshId, mesh') = do
+  let primitives' = mesh' ^. _meshPrimitives
+  V.ifoldM (addMeshPrimitiveToMap createBuffer meshId) buffers primitives'
+
+addMeshPrimitiveToMap createBuffer meshId buffers idx primitive' = do
+  let bufferId = MeshPrimitiveId meshId idx
+  buffer <- createBuffer primitive'
+  return $ Map.insert bufferId buffer buffers
+

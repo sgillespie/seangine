@@ -9,6 +9,7 @@ import Graphics.Seangine.Render.Vertex
 import Graphics.Seangine.Scene
 import Graphics.Seangine.Shared.Utils (oneSecond, throwIfUnsuccessful)
 
+import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Resource
 import Control.Monad.Trans.Reader (ask)
@@ -25,6 +26,7 @@ import Vulkan.CStruct.Extends (SomeStruct(..))
 import Vulkan.Extensions.VK_KHR_swapchain
 import Vulkan.Zero (Zero(..))
 import VulkanMemoryAllocator (withMappedMemory)
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Vector as V
 
 recordCommandBuffer :: Frame -> Framebuffer -> CmdT SeangineInstance ()
@@ -43,13 +45,9 @@ recordCommandBuffer Frame{..} framebuffer = do
             DepthStencil $ ClearDepthStencilValue 1 0
           ]
 
-      primitives' = fScene ^. _allMeshPrimitives
-      indices = concatMap (^. _meshPrimitiveIndices . to V.toList) primitives'
-
   cmdUseRenderPass commandBuffer renderPassBeginInfo SUBPASS_CONTENTS_INLINE $ do
     cmdBindPipeline commandBuffer PIPELINE_BIND_POINT_GRAPHICS fGraphicsPipeline
-    cmdBindVertexBuffers commandBuffer 0 [fVertexBuffer] [0]
-    cmdBindIndexBuffer commandBuffer fIndexBuffer 0 INDEX_TYPE_UINT16
+
     cmdBindDescriptorSets
       commandBuffer
       PIPELINE_BIND_POINT_GRAPHICS
@@ -58,7 +56,18 @@ recordCommandBuffer Frame{..} framebuffer = do
       [fDescriptorSets 0]
       []
 
-    cmdDrawIndexed commandBuffer (fromIntegral $ length indices) 1 0 0 0
+    V.forM_ (fScene ^. _nodes) $ \node -> do
+      forM_ (node ^. _nodeMesh fScene) $ \(meshId, mesh) -> do
+        V.iforM_ (mesh ^. _meshPrimitives) $ \id primitive' -> do
+          let bufferId = MeshPrimitiveId meshId id
+              indices = primitive' ^. _meshPrimitiveIndices
+              vertexBuffer = fVertexBuffers Map.! bufferId
+              indexBuffer = fIndexBuffers Map.! bufferId
+      
+          cmdBindVertexBuffers commandBuffer 0 [vertexBuffer] [0]
+          cmdBindIndexBuffer commandBuffer indexBuffer 0 INDEX_TYPE_UINT16
+
+          cmdDrawIndexed commandBuffer (fromIntegral $ length indices) 1 0 0 0
 
 renderFrame :: V.Vector CommandBuffer -> SeangineFrame ()
 renderFrame commandBuffers = do

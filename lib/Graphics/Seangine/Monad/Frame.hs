@@ -8,6 +8,7 @@ module Graphics.Seangine.Monad.Frame
   ) where
 
 import Graphics.Seangine.Monad.Instance
+import Graphics.Seangine.Scene (MeshPrimitiveId(..))
 
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader
@@ -21,6 +22,7 @@ import Data.Word (Word32(), Word64())
 import Vulkan.Core10
 import Vulkan.Extensions.VK_KHR_swapchain (SurfaceKHR(), SwapchainKHR())
 import VulkanMemoryAllocator (Allocation())
+import qualified Data.HashMap.Strict as Map
 
 -- |Monad class containing all Vulkan swapchain and frame-level resources. They MUST
 -- be recreated along with the swapchain.
@@ -43,8 +45,8 @@ data Frame = Frame
     fGraphicsPipeline :: Pipeline,
     fImageAvailable :: Semaphore,
     fRenderFinished :: Semaphore,
-    fVertexBuffer :: Buffer,
-    fIndexBuffer :: Buffer,
+    fVertexBuffers :: Map.HashMap MeshPrimitiveId Buffer,
+    fIndexBuffers :: Map.HashMap MeshPrimitiveId Buffer,
     fUniformBuffers :: Vector (Buffer, Allocation),
     fDescriptorSets :: Word32 -> DescriptorSet,
     fResources :: (ReleaseKey, InternalState),
