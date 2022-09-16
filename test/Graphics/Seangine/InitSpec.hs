@@ -1,9 +1,9 @@
 module Graphics.Seangine.InitSpec where
 
 import Graphics.Seangine
-import Graphics.Seangine.Init
 
 import Control.Monad.Trans.Resource
+import RIO
 import Vulkan.Core10
 import Test.Hspec
 

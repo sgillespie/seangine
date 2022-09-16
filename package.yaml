@@ -104,4 +104,6 @@ tests:
     main: Spec.hs
     dependencies:
       - hspec
+      - seangine
+      - transformers
     build-tools: hspec-discover:hspec-discover

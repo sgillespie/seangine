@@ -1,16 +1,17 @@
 module Graphics.Seangine.Monad.VulkanSpec where
 
 import Control.Monad.Trans.Reader
-import Data.Functor.Identity
 
+import Data.Functor.Identity
+import RIO
 import Test.Hspec
 
-import Graphics.Seangine.Monad.Vulkan
+import Graphics.Seangine.Monad.Instance
 
 newtype Dummy a = Dummy { undummy :: (Identity a) }
   deriving (Functor, Applicative, Monad)
 
-instance MonadVulkan Dummy where
+instance MonadInstance Dummy where
   getDataDir = return "getDataDir"
   getInstance = undefined
   getPhysicalDevice = undefined
