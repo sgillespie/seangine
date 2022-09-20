@@ -1,18 +1,18 @@
-module Graphics.Seangine.SwapchainInit
+module Graphics.Seangine.FrameInit
    ( withVulkanFrame,
-    withCommandBuffers'
-  ) where
+     withCommandBuffers'
+   ) where
 
 import Graphics.Seangine.GraphicsPipeline
 import Graphics.Seangine.Monad
-import Graphics.Seangine.Monad.Frame
 import Graphics.Seangine.Render.UniformBufferObject
 import Graphics.Seangine.Render.Vertex
 import Graphics.Seangine.Scene
 import Graphics.Seangine.Shared.Utils (throwIfUnsuccessful)
-import Graphics.Seangine.SwapchainInit.BufferDetails
-import Graphics.Seangine.SwapchainInit.DescriptorSets (withDescriptorSets')
-import Graphics.Seangine.SwapchainInit.SwapchainDetails
+import Graphics.Seangine.FrameInit.BufferDetails
+import Graphics.Seangine.FrameInit.DescriptorSets (withDescriptorSets')
+import Graphics.Seangine.FrameInit.FrameInFlightInit (withFramesInFlight)
+import Graphics.Seangine.FrameInit.SwapchainDetails
 import Graphics.Seangine.Window
 
 import Control.Monad (forM, forM_)
@@ -42,6 +42,8 @@ import qualified Data.HashMap.Strict as Map
 import qualified Data.Vector as V
 import qualified VulkanMemoryAllocator as VMA
 
+maxFramesInFlight :: Int
+maxFramesInFlight = 1
 
 withVulkanFrame
   :: WindowSystem system
@@ -54,18 +56,6 @@ withVulkanFrame window surface scene = do
   allocator <- getAllocator
 
   start <- liftIO getMonotonicTime
-
-  let meshPrimitives = scene ^. _allMeshPrimitives
-      indices = V.concatMap (^. _meshPrimitiveIndices) meshPrimitives
-      abs' (V3 x y z) = V3 (abs x) (abs y) (abs z)
-      vertices = V.concatMap
-        (\prim ->
-           V.zipWith
-             (\pos norm -> Vertex pos norm (abs norm))
-             (prim ^. _meshPrimitivePositions)
-             (prim ^. _meshPrimitiveNormals))
-        meshPrimitives
-
   swapchainDetails@SwapchainDetails{..} <- withSwapchainDetails window surface
   imageViews <- withImageViews swapchainDetails
   descriptorSetLayout <- withDescriptorSetLayout'
@@ -75,14 +65,10 @@ withVulkanFrame window surface scene = do
   
   depthImageView <- withDepthImageView swapchainDetails
   framebuffers <- withFramebuffers imageViews depthImageView renderPass sdExtent
-  (imageAvailable, renderFinished) <- withSemaphores
   vertexBuffers <- withVertexBuffers scene
   indexBuffers <- withIndexBuffers scene
-  uniformBuffers <- withUniformBuffer imageViews
+  framesInFlight <- withFramesInFlight maxFramesInFlight descriptorSetLayout
   resources <- allocate createInternalState closeInternalState
-  descriptorSets <-
-    withDescriptorSets' imageViews (V.map fst uniformBuffers) descriptorSetLayout
-  fence <- withFence'
   
   return Frame
     { fIndex = 0,
@@ -95,14 +81,11 @@ withVulkanFrame window surface scene = do
       fFramebuffers = framebuffers,
       fPipelineLayout = pipelineLayout,
       fGraphicsPipeline = graphicsPipeline,
-      fImageAvailable = imageAvailable,
-      fRenderFinished = renderFinished,
       fVertexBuffers = vertexBuffers,
       fIndexBuffers = indexBuffers,
-      fUniformBuffers = uniformBuffers,
-      fDescriptorSets = (descriptorSets V.!) . fromIntegral, 
-      fResources = resources,
-      fGpuWork = fence
+      fMaxFramesInFlight = maxFramesInFlight,
+      fFramesInFlight = framesInFlight,
+      fResources = resources
     }
 
 withCommandBuffers' :: Frame -> SeangineInstance (V.Vector CommandBuffer)
@@ -155,17 +138,6 @@ withDepthImageView :: SwapchainDetails -> SeangineInstance ImageView
 withDepthImageView swapchain@SwapchainDetails{..} = do
   depthImage <- withDepthImage swapchain
   withImageView' depthImage sdDepthFormat IMAGE_ASPECT_DEPTH_BIT
-
-withSemaphores :: SeangineInstance (Semaphore, Semaphore)
-withSemaphores = do
-  device <- getDevice
-
-  let withSemaphore' createInfo = snd <$> withSemaphore device createInfo Nothing allocate
-
-  imageAvailable <- withSemaphore' zero
-  renderFinished <- withSemaphore' zero
-
-  return (imageAvailable, renderFinished)
 
 withDepthImage :: SwapchainDetails -> SeangineInstance Image
 withDepthImage SwapchainDetails{..} = do

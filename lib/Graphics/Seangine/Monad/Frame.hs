@@ -1,6 +1,8 @@
 module Graphics.Seangine.Monad.Frame
   ( Frame(..),
+    FrameInFlight(..),
     MonadFrame(..),
+    MonadFrameInFlight(..),
     SeangineFrame(..),
     allocateVulkan,
     allocateVulkan_,
@@ -11,13 +13,12 @@ import Graphics.Seangine.Monad.Instance
 import Graphics.Seangine.Scene (MeshPrimitiveId(..))
 
 import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Reader
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Resource
-import Prelude
+import RIO
+import RIO.Vector.Boxed.Partial
 import Text.GLTF.Loader (Gltf(..))
-import Data.Vector (Vector())
 import Data.Word (Word32(), Word64())
 import Vulkan.Core10
 import Vulkan.Extensions.VK_KHR_swapchain (SurfaceKHR(), SwapchainKHR())
@@ -28,6 +29,9 @@ import qualified Data.HashMap.Strict as Map
 -- be recreated along with the swapchain.
 class Monad m => MonadFrame m where
   getFrame :: m Frame
+
+class Monad m => MonadFrameInFlight m where
+  getFrameInFlight :: m FrameInFlight
 
 instance MonadFrame m => MonadFrame (ReaderT r m) where
   getFrame = lift getFrame
@@ -43,14 +47,21 @@ data Frame = Frame
     fFramebuffers :: Vector Framebuffer,
     fPipelineLayout :: PipelineLayout,
     fGraphicsPipeline :: Pipeline,
-    fImageAvailable :: Semaphore,
-    fRenderFinished :: Semaphore,
     fVertexBuffers :: Map.HashMap MeshPrimitiveId Buffer,
     fIndexBuffers :: Map.HashMap MeshPrimitiveId Buffer,
-    fUniformBuffers :: Vector (Buffer, Allocation),
-    fDescriptorSets :: Word32 -> DescriptorSet,
-    fResources :: (ReleaseKey, InternalState),
-    fGpuWork :: Fence
+    fMaxFramesInFlight :: Int,
+    fFramesInFlight :: Vector FrameInFlight,
+    fResources :: (ReleaseKey, InternalState)
+  }
+
+data FrameInFlight = FrameInFlight
+  { ffImageAvailable :: Semaphore,
+    ffRenderFinished :: Semaphore,
+    ffUniformBuffer :: (Buffer, Allocation),
+    ffDescriptorSets :: Vector DescriptorSet,
+    ffCommandPool :: CommandPool,
+    ffCommandBuffer :: CommandBuffer,
+    ffGpuWork :: Fence
   }
 
 newtype SeangineFrame a
@@ -65,6 +76,12 @@ newtype SeangineFrame a
 
 instance MonadFrame SeangineFrame where
   getFrame = SeangineFrame ask
+
+instance MonadFrameInFlight SeangineFrame where
+  getFrameInFlight = do
+    Frame{..} <- getFrame
+    let index = fromIntegral fIndex
+    return $ fFramesInFlight ! (index `mod` fMaxFramesInFlight)
   
 instance MonadUnliftIO SeangineFrame where
   withRunInIO a = SeangineFrame $ withRunInIO (\r -> a (r . unFrame))

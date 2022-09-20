@@ -30,15 +30,13 @@ main = runResourceT $ do
     reportPhysicalDevice
     
     initialFrame <- withVulkanFrame win surface scene
-    commandBuffers <- withCommandBuffers' initialFrame
-    runCommandBuffers initialFrame commandBuffers
 
     flip loopM initialFrame $ \frame -> do
       windowEvents <- pollWindowEvents win
       if shouldQuit windowEvents
         then return $ Right ()
         else do
-          runFrame frame (renderFrame commandBuffers)
+          runFrame frame renderFrame
           return $ Left (advanceFrame frame)
 
 reportPhysicalDevice :: SeangineInstance ()
@@ -63,10 +61,5 @@ loadScene path = do
     Left err -> throwSystemError (show err)
     Right scene -> return scene
 
-runCommandBuffers :: Frame -> V.Vector CommandBuffer -> SeangineInstance ()
-runCommandBuffers frame@Frame{..} commandBuffers = do
-  V.forM_ (V.zip commandBuffers fFramebuffers) $ \(commandBuffer, framebuffer) ->
-    runCmdT commandBuffer zero $ recordCommandBuffer frame framebuffer
-    
 advanceFrame :: Frame -> Frame
 advanceFrame frame = frame { fIndex = succ (fIndex frame) }

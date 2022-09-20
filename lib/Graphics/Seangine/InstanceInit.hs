@@ -4,6 +4,7 @@ module Graphics.Seangine.InstanceInit
   ) where
 
 import Graphics.Seangine.Monad
+import Graphics.Seangine.InstanceInit.CommandBuffers (withCommandPool', withCommandBuffer')
 import Graphics.Seangine.InstanceInit.PhysicalDeviceDetails
 import Graphics.Seangine.Shared.Utils (mresult)
 
@@ -71,7 +72,7 @@ withInstanceHandles dataDir instance' surface = do
   allocator <- withAllocator' instance' ppdPhysicalDevice device
   gfxQueue <- getDeviceQueue device ppdGraphicsFamilyIndex 0
   presentQueue <- getDeviceQueue device ppdPresentFamilyIndex 0
-  commandPool <- withCommandPool' device ppdGraphicsFamilyIndex
+  commandPool <- withCommandPool' device ppdGraphicsFamilyIndex zero
 
   return InstanceHandles
     { vhDataDir = dataDir,
@@ -221,11 +222,6 @@ withAllocator' instance' physicalDevice device
             VMA.instance' = instanceHandle instance',
             VMA.vulkanFunctions = Just $ vulkanFunctions' instance' device
           }
-
-withCommandPool' :: MonadResource m => Device -> Word32 -> m CommandPool
-withCommandPool' device queueFamilyIndex
-  = snd <$> withCommandPool device createInfo Nothing allocate
-  where createInfo = CommandPoolCreateInfo zero queueFamilyIndex
 
 vulkanFunctions' :: Instance -> Device -> VMA.VulkanFunctions
 vulkanFunctions' instance' device = zero

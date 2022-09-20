@@ -10,7 +10,7 @@ import Graphics.Seangine.GraphicsPipeline.VertexShader (vertexShaderCode)
 import Graphics.Seangine.Monad (MonadInstance(..), SeangineInstance(..))
 import Graphics.Seangine.Render.PushConstantObject (PushConstantObject(..))
 import Graphics.Seangine.Render.Vertex hiding (vertexAttributeDescriptions)
-import Graphics.Seangine.SwapchainInit.SwapchainDetails (SwapchainDetails(..))
+import Graphics.Seangine.FrameInit.SwapchainDetails (SwapchainDetails(..))
 import qualified Graphics.Seangine.Render.Vertex as Vertex
 
 import Control.Monad.Trans.Resource (allocate)

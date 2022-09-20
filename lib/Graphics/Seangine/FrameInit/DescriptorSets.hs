@@ -1,4 +1,4 @@
-module Graphics.Seangine.SwapchainInit.DescriptorSets
+module Graphics.Seangine.FrameInit.DescriptorSets
   (withDescriptorSets') where
 
 import Graphics.Seangine.Monad (MonadInstance(..), SeangineInstance)
@@ -14,66 +14,61 @@ import Vulkan.Zero (Zero(..))
 import qualified Data.Vector as V
 
 withDescriptorSets'
-  :: V.Vector ImageView
-  -> V.Vector Buffer
+  :: Buffer
   -> DescriptorSetLayout
   -> SeangineInstance (V.Vector DescriptorSet)
-withDescriptorSets' imageViews uniformBuffers descriptorSetLayout = do
+withDescriptorSets' uniformBuffer descriptorSetLayout = do
   device <- getDevice
 
-  let count = length imageViews
-      descriptorSetLayouts = V.replicate count descriptorSetLayout
-
-  descriptorPool <- withDescriptorPool' (fromIntegral count)
-  descriptorSets <- allocateDescriptorSets' descriptorPool descriptorSetLayouts
-  updateDescriptorSets' descriptorSets uniformBuffers
+  descriptorPool <- withDescriptorPool'
+  descriptorSets <- allocateDescriptorSets' descriptorPool descriptorSetLayout
+  updateDescriptorSets' uniformBuffer descriptorSets
   
   return descriptorSets
 
-withDescriptorPool' :: Word32 -> SeangineInstance DescriptorPool
-withDescriptorPool' descriptorCount = do
+withDescriptorPool' :: SeangineInstance DescriptorPool
+withDescriptorPool' = do
   device <- getDevice
 
   let descriptorPoolCreateInfo = zero
-        { maxSets = descriptorCount,
+        { maxSets = 10,
           poolSizes = [uniformPoolSize]
         }
 
       uniformPoolSize = DescriptorPoolSize
         { type' = DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-          descriptorCount = fromIntegral descriptorCount
+          descriptorCount = 10
         }
 
   snd <$> withDescriptorPool device descriptorPoolCreateInfo Nothing allocate
 
 allocateDescriptorSets'
   :: DescriptorPool
-  -> V.Vector DescriptorSetLayout
+  -> DescriptorSetLayout
   -> SeangineInstance (V.Vector DescriptorSet)
-allocateDescriptorSets' descriptorPool setLayouts = do
+allocateDescriptorSets' descriptorPool setLayout = do
   device <- getDevice
 
   let descriptorSetAllocateInfo = zero
         { descriptorPool = descriptorPool,
-          setLayouts = setLayouts
+          setLayouts = [setLayout]
         }
 
   allocateDescriptorSets device descriptorSetAllocateInfo
 
 updateDescriptorSets'
-  :: V.Vector DescriptorSet
-  -> V.Vector Buffer
+  :: Buffer
+  ->  V.Vector DescriptorSet
   -> SeangineInstance ()
-updateDescriptorSets' descriptorSets uniformBuffers = do
+updateDescriptorSets' uniformBuffer descriptorSets = do
   device <- getDevice
-
-  V.zipWithM_ updateDescriptorSet' descriptorSets uniformBuffers
+  V.mapM_ (updateDescriptorSet' uniformBuffer) descriptorSets
 
 updateDescriptorSet'
-  :: DescriptorSet
-  -> Buffer
+  :: Buffer
+  -> DescriptorSet
   -> SeangineInstance ()
-updateDescriptorSet' descriptorSet uniformBuffer = do
+updateDescriptorSet' uniformBuffer descriptorSet = do
   device <- getDevice
   
   let uniformDescriptorWrite = SomeStruct $ zero

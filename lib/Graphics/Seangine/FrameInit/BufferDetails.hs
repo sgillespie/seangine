@@ -1,4 +1,4 @@
-module Graphics.Seangine.SwapchainInit.BufferDetails
+module Graphics.Seangine.FrameInit.BufferDetails
   ( BufferDetails(..),
     withBufferDetails,
     withDeviceLocalBuffer,
@@ -164,7 +164,6 @@ withOneTimeCommandBuffer = do
   (releaseKey, commandBuffers) <- withCommandBuffers device commandBufferInfo allocate
 
   return (releaseKey, V.head commandBuffers)
-  
 
 recordOneTimeCommandBuffer
   :: CommandBuffer
