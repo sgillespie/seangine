@@ -1,8 +1,7 @@
 # Seangine
-> A graphics newbie tries to build a 3D renderer in Vulkan
+> An experimental 3D rendering engine in Vulkan
 
 This project was created to try to learn the Vulkan 3D graphics library in Haskell. Therefore, it is not complete or production quality.
-I *strongly* recommend not using this for any purpose other than education or comedy.
 
 ## Introduction
 Seangine is a highish level interface to the Vulkan API. The design goals are
