@@ -18,10 +18,10 @@
       shell.tools = {
         cabal = { inherit index-state; };
         hlint = { inherit index-state; };
-        haskell-language-server = { inherit index-state; };
       };
       
       shell.buildInputs = with pkgs; [
+        renderdoc
         watchman
         nixpkgs-fmt
       ];

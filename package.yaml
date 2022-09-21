@@ -73,9 +73,9 @@ library:
   other-modules:
     - Graphics.Seangine.InstanceInit.PhysicalDeviceDetails
     - Graphics.Seangine.Shared.Utils
-    - Graphics.Seangine.SwapchainInit.BufferDetails
-    - Graphics.Seangine.SwapchainInit.DescriptorSets
-    - Graphics.Seangine.SwapchainInit.SwapchainDetails
+    - Graphics.Seangine.FrameInit.BufferDetails
+    - Graphics.Seangine.FrameInit.DescriptorSets
+    - Graphics.Seangine.FrameInit.SwapchainDetails
   dependencies:
     - bytestring
     - linear
