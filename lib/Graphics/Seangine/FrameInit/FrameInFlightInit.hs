@@ -71,4 +71,7 @@ withFence' :: SeangineInstance Fence
 withFence' = do
   device <- getDevice
 
-  snd <$> withFence device zero Nothing allocate
+  let fenceCreateInfo :: FenceCreateInfo '[]
+      fenceCreateInfo = zero { flags = FENCE_CREATE_SIGNALED_BIT }
+
+  snd <$> withFence device fenceCreateInfo Nothing allocate

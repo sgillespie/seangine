@@ -11,7 +11,7 @@ import Graphics.Seangine.Shared.Utils (mresult)
 import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Unlift (MonadIO(..))
-import Control.Monad.Trans.Resource (MonadResource(..), allocate)
+import Control.Monad.Trans.Resource
 import Data.Bits ((.|.), Bits(..))
 import Data.Foldable.Extra (findM)
 import Data.Functor ((<&>))

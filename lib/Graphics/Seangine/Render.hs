@@ -41,6 +41,12 @@ renderFrame = do
 
   FrameInFlight{..} <- getFrameInFlight
 
+  fenceResult <- waitForFencesSafe device [ffGpuWork] True oneSecond
+  throwIfUnsuccessful "Timed out waiting for fence" fenceResult
+
+  resetFences device [ffGpuWork]
+  resetCommandBuffer ffCommandBuffer zero
+
   (imageResult, imageIndex) <- acquireNextImageKHR device fSwapchain maxBound ffImageAvailable zero
   throwIfUnsuccessful "Failed to acquire swapchain image!" imageResult
 
@@ -65,13 +71,8 @@ renderFrame = do
   
   queueSubmit graphicsQueue [submitInfo] ffGpuWork
   result <- queuePresentKHR presentQueue presentInfo
-
   throwIfUnsuccessful "Failed to present swapchain image!" result
 
-  fenceResult <- waitForFencesSafe device [ffGpuWork] True oneSecond
-  throwIfUnsuccessful "Timed out waiting for fence" fenceResult
-  resetFences device [ffGpuWork]
-  
   return ()
 
 recordCommandBuffer :: Frame -> Int -> CmdT SeangineFrame ()

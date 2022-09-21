@@ -1,7 +1,5 @@
 module Graphics.Seangine.FrameInit
-   ( withVulkanFrame,
-     withCommandBuffers'
-   ) where
+   (withVulkanFrame) where
 
 import Graphics.Seangine.GraphicsPipeline
 import Graphics.Seangine.Monad
@@ -15,7 +13,7 @@ import Graphics.Seangine.FrameInit.FrameInFlightInit (withFramesInFlight)
 import Graphics.Seangine.FrameInit.SwapchainDetails
 import Graphics.Seangine.Window
 
-import Control.Monad (forM, forM_)
+import Control.Monad (forM, forM_, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Reader (ask)
 import Control.Monad.Trans.Resource
@@ -54,6 +52,7 @@ withVulkanFrame
 withVulkanFrame window surface scene = do
   handles <- SeangineInstance ask
   allocator <- getAllocator
+  device <- getDevice
 
   start <- liftIO getMonotonicTime
   swapchainDetails@SwapchainDetails{..} <- withSwapchainDetails window surface
@@ -69,6 +68,8 @@ withVulkanFrame window surface scene = do
   indexBuffers <- withIndexBuffers scene
   framesInFlight <- withFramesInFlight maxFramesInFlight descriptorSetLayout
   resources <- allocate createInternalState closeInternalState
+
+  registerCleanupDevice
   
   return Frame
     { fIndex = 0,
@@ -87,19 +88,6 @@ withVulkanFrame window surface scene = do
       fFramesInFlight = framesInFlight,
       fResources = resources
     }
-
-withCommandBuffers' :: Frame -> SeangineInstance (V.Vector CommandBuffer)
-withCommandBuffers' Frame{..} = do
-  commandPool <- getCommandPool
-  device <- getDevice
-
-  let commandBufferAllocateInfo = zero
-        { commandPool = commandPool,
-          level = COMMAND_BUFFER_LEVEL_PRIMARY,
-          commandBufferCount = fromIntegral $ V.length fFramebuffers
-        }
-  
-  snd <$> withCommandBuffers device commandBufferAllocateInfo allocate
 
 withImageViews :: SwapchainDetails -> SeangineInstance (V.Vector ImageView)
 withImageViews SwapchainDetails{..} = do
@@ -194,23 +182,9 @@ withIndexBuffers scene = V.foldM addNodeMeshToMap' Map.empty nodes
                   
           bdBuffer <$> withDeviceLocalBuffer bufferSize usageFlags indices
 
-withUniformBuffer :: V.Vector ImageView -> SeangineInstance (V.Vector (Buffer, VMA.Allocation))
-withUniformBuffer imageViews = do
-  allocator <- getAllocator
-
-  let bufferSize = fromIntegral $ sizeOf (zero :: UniformBufferObject)
-      usageFlags = BUFFER_USAGE_UNIFORM_BUFFER_BIT
-      memoryFlags = MEMORY_PROPERTY_HOST_VISIBLE_BIT .|. MEMORY_PROPERTY_HOST_COHERENT_BIT
-
-  forM imageViews $ \_ -> do
-    BufferDetails{..} <- withBufferDetails bufferSize usageFlags memoryFlags
-    return (bdBuffer, bdAllocation)
-
-withFence' :: SeangineInstance Fence
-withFence' = do
-  device <- getDevice
-
-  snd <$> withFence device zero Nothing allocate
+registerCleanupDevice :: SeangineInstance ()
+registerCleanupDevice = getDevice >>= void . allocate_ noAction . deviceWaitIdle
+  where noAction = return ()
 
 addNodeMeshToMap
   :: (MeshPrimitive -> SeangineInstance Buffer)
