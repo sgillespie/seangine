@@ -41,7 +41,7 @@ import qualified Data.Vector as V
 import qualified VulkanMemoryAllocator as VMA
 
 maxFramesInFlight :: Int
-maxFramesInFlight = 1
+maxFramesInFlight = 3
 
 withVulkanFrame
   :: WindowSystem system
