@@ -1,6 +1,5 @@
 module Graphics.Seangine.GraphicsPipeline
-  (withDescriptorSetLayout',
-   withPipelineLayout',
+  (withPipelineLayout',
    withRenderPass',
    withGraphicsPipeline'
   ) where
@@ -10,6 +9,7 @@ import Graphics.Seangine.GraphicsPipeline.VertexShader (vertexShaderCode)
 import Graphics.Seangine.Monad (MonadInstance(..), SeangineInstance(..))
 import Graphics.Seangine.Render.PushConstantObject (PushConstantObject(..))
 import Graphics.Seangine.Render.Vertex hiding (vertexAttributeDescriptions)
+import Graphics.Seangine.FrameInit.DescriptorSets (DescriptorSetLayouts(..))
 import Graphics.Seangine.FrameInit.SwapchainDetails (SwapchainDetails(..))
 import qualified Graphics.Seangine.Render.Vertex as Vertex
 
@@ -92,28 +92,13 @@ withGraphicsPipeline' layout renderPass extent@(Extent2D width height) = do
 
   return . V.head . snd $ pipelines
 
-withDescriptorSetLayout' :: SeangineInstance DescriptorSetLayout
-withDescriptorSetLayout' = do
-  device <- getDevice
-  let createInfo = zero
-        { bindings = [uniformLayoutBinding] }
-
-      uniformLayoutBinding = zero
-        { binding = 0,
-          descriptorType = DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-          descriptorCount = 1,
-          stageFlags = SHADER_STAGE_VERTEX_BIT
-        }
-
-  snd <$> withDescriptorSetLayout device createInfo Nothing allocate
-
-withPipelineLayout' :: DescriptorSetLayout  -> SeangineInstance PipelineLayout
-withPipelineLayout' setLayout = do
+withPipelineLayout' :: DescriptorSetLayouts -> SeangineInstance PipelineLayout
+withPipelineLayout' DescriptorSetLayouts{..} = do
   device <- getDevice
   
   let createInfo :: PipelineLayoutCreateInfo
       createInfo = zero
-        { setLayouts = [setLayout],
+        { setLayouts = [uniformBufferSetLayout, objectBufferSetLayout],
           pushConstantRanges = [pushConstantRange]
         }
   

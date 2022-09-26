@@ -9,18 +9,22 @@ import Data.ByteString (ByteString())
 vertexShaderCode :: ByteString
 vertexShaderCode
   = [vert|
-      #version 450
-      #extension GL_ARB_separate_shader_objects: enable
+      #version 460
+      #extension GL_EXT_debug_printf : enable
 
-      layout(push_constant) uniform constants {
+      struct ObjectData {
         mat4 transform;
-      } pushConstants;
+      };
 
-      layout(binding = 0) uniform UniformBufferObject {
+      layout(set = 0, binding = 0) uniform UniformBufferObject {
         mat4 model;
         mat4 view;
         mat4 projection;
       } uniformObject;
+
+      layout(std140,set = 1, binding = 0) readonly buffer ObjectBuffer{
+        ObjectData[] objects;
+      } objectBuffer;
 
       layout(location = 0) in vec3 inPosition;
       layout(location = 1) in vec3 inNormal;
@@ -29,11 +33,13 @@ vertexShaderCode
       layout(location = 0) out vec3 fragColor;
 
       void main() {
+        mat4 transform = objectBuffer.objects[gl_BaseInstance].transform;
+
         gl_Position =
           uniformObject.projection *
           uniformObject.view *
           uniformObject.model *
-          pushConstants.transform *
+          transform *
           vec4(inPosition, 1.0);
 
         fragColor = inColor;

@@ -58,6 +58,7 @@ data FrameInFlight = FrameInFlight
   { ffImageAvailable :: Semaphore,
     ffRenderFinished :: Semaphore,
     ffUniformBuffer :: (Buffer, Allocation),
+    ffObjectBuffer :: (Buffer, Allocation),
     ffDescriptorSets :: Vector DescriptorSet,
     ffCommandPool :: CommandPool,
     ffCommandBuffer :: CommandBuffer,

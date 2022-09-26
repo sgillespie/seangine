@@ -8,7 +8,7 @@ import Graphics.Seangine.Render.Vertex
 import Graphics.Seangine.Scene
 import Graphics.Seangine.Shared.Utils (throwIfUnsuccessful)
 import Graphics.Seangine.FrameInit.BufferDetails
-import Graphics.Seangine.FrameInit.DescriptorSets (withDescriptorSets')
+import Graphics.Seangine.FrameInit.DescriptorSets
 import Graphics.Seangine.FrameInit.FrameInFlightInit (withFramesInFlight)
 import Graphics.Seangine.FrameInit.SwapchainDetails
 import Graphics.Seangine.Window
@@ -57,8 +57,8 @@ withVulkanFrame window surface scene = do
   start <- liftIO getMonotonicTime
   swapchainDetails@SwapchainDetails{..} <- withSwapchainDetails window surface
   imageViews <- withImageViews swapchainDetails
-  descriptorSetLayout <- withDescriptorSetLayout'
-  pipelineLayout <- withPipelineLayout' descriptorSetLayout
+  descriptorSetLayouts <- withDescriptorSetLayouts'
+  pipelineLayout <- withPipelineLayout' descriptorSetLayouts
   renderPass <- withRenderPass' sdSurfaceFormat sdDepthFormat
   graphicsPipeline <- withGraphicsPipeline' pipelineLayout renderPass sdExtent
   
@@ -66,7 +66,7 @@ withVulkanFrame window surface scene = do
   framebuffers <- withFramebuffers imageViews depthImageView renderPass sdExtent
   vertexBuffers <- withVertexBuffers scene
   indexBuffers <- withIndexBuffers scene
-  framesInFlight <- withFramesInFlight maxFramesInFlight descriptorSetLayout
+  framesInFlight <- withFramesInFlight maxFramesInFlight descriptorSetLayouts
   resources <- allocate createInternalState closeInternalState
 
   registerCleanupDevice

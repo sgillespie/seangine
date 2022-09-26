@@ -1,7 +1,12 @@
 module Graphics.Seangine.FrameInit.DescriptorSets
-  (withDescriptorSets') where
+  (DescriptorSetLayouts(..),
+   withDescriptorSetLayouts',
+   withDescriptorSets',
+   maxObjects
+  ) where
 
 import Graphics.Seangine.Monad (MonadInstance(..), SeangineInstance)
+import Graphics.Seangine.Render.PushConstantObject (PushConstantObject(..))
 import Graphics.Seangine.Render.UniformBufferObject (UniformBufferObject(..))
 
 import Control.Monad.Trans.Resource (allocate)
@@ -13,18 +18,66 @@ import Vulkan.Core10
 import Vulkan.Zero (Zero(..))
 import qualified Data.Vector as V
 
+maxObjects :: Int
+maxObjects = 10000
+
+data DescriptorSetLayouts = DescriptorSetLayouts
+  { uniformBufferSetLayout :: DescriptorSetLayout,
+    objectBufferSetLayout :: DescriptorSetLayout
+  }
+
+withDescriptorSetLayouts' :: SeangineInstance DescriptorSetLayouts
+withDescriptorSetLayouts' = do
+  device <- getDevice
+  let uniformLayoutCreateInfo = zero
+        { bindings = [uniformLayoutBinding] }
+
+      uniformLayoutBinding = zero
+        { binding = 0,
+          descriptorType = DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+          descriptorCount = 1,
+          stageFlags = SHADER_STAGE_VERTEX_BIT
+        }
+
+      objectLayoutCreateInfo = zero
+        { bindings = [objectLayoutBinding] }
+
+      objectLayoutBinding = zero
+        { binding = 0,
+          descriptorType = DESCRIPTOR_TYPE_STORAGE_BUFFER,
+          descriptorCount = 1,
+          stageFlags = SHADER_STAGE_VERTEX_BIT
+        }
+
+  DescriptorSetLayouts
+    <$> withDescriptorSetLayout' uniformLayoutCreateInfo
+    <*> withDescriptorSetLayout' objectLayoutCreateInfo
+
 withDescriptorSets'
   :: Buffer
-  -> DescriptorSetLayout
+  -> Buffer
+  -> DescriptorSetLayouts
   -> SeangineInstance (V.Vector DescriptorSet)
-withDescriptorSets' uniformBuffer descriptorSetLayout = do
+withDescriptorSets' uniformBuffer objectBuffer DescriptorSetLayouts{..} = do
   device <- getDevice
 
   descriptorPool <- withDescriptorPool'
-  descriptorSets <- allocateDescriptorSets' descriptorPool descriptorSetLayout
-  updateDescriptorSets' uniformBuffer descriptorSets
+  uniformDescriptorSets <- allocateDescriptorSets' descriptorPool uniformBufferSetLayout
+  objectDescriptorSets <- allocateDescriptorSets' descriptorPool objectBufferSetLayout
+
+  updateUniformDescriptorSets' uniformBuffer uniformDescriptorSets
+  updateObjectDescriptorSets' objectBuffer objectDescriptorSets
   
-  return descriptorSets
+  return $ uniformDescriptorSets V.++ objectDescriptorSets
+
+withDescriptorSetLayout'
+  :: DescriptorSetLayoutCreateInfo '[]
+  -> SeangineInstance DescriptorSetLayout
+withDescriptorSetLayout' createInfo = do
+  device <- getDevice
+  (_, layout) <- withDescriptorSetLayout device createInfo Nothing allocate
+
+  return layout
 
 withDescriptorPool' :: SeangineInstance DescriptorPool
 withDescriptorPool' = do
@@ -32,11 +85,16 @@ withDescriptorPool' = do
 
   let descriptorPoolCreateInfo = zero
         { maxSets = 10,
-          poolSizes = [uniformPoolSize]
+          poolSizes = [uniformPoolSize, objectPoolSize]
         }
 
       uniformPoolSize = DescriptorPoolSize
         { type' = DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+          descriptorCount = 10
+        }
+
+      objectPoolSize = DescriptorPoolSize
+        { type' = DESCRIPTOR_TYPE_STORAGE_BUFFER,
           descriptorCount = 10
         }
 
@@ -56,19 +114,23 @@ allocateDescriptorSets' descriptorPool setLayout = do
 
   allocateDescriptorSets device descriptorSetAllocateInfo
 
-updateDescriptorSets'
+updateUniformDescriptorSets'
   :: Buffer
-  ->  V.Vector DescriptorSet
+  -> V.Vector DescriptorSet
   -> SeangineInstance ()
-updateDescriptorSets' uniformBuffer descriptorSets = do
+updateUniformDescriptorSets' uniformBuffer descriptorSets = do
   device <- getDevice
-  V.mapM_ (updateDescriptorSet' uniformBuffer) descriptorSets
+  V.mapM_ (updateUniformDescriptorSet' uniformBuffer) descriptorSets
 
-updateDescriptorSet'
+updateObjectDescriptorSets' objectBuffer descriptorSets = do
+  device <- getDevice
+  V.mapM_ (updateObjectDescriptorSet' objectBuffer) descriptorSets
+
+updateUniformDescriptorSet'
   :: Buffer
   -> DescriptorSet
   -> SeangineInstance ()
-updateDescriptorSet' uniformBuffer descriptorSet = do
+updateUniformDescriptorSet' uniformBuffer descriptorSet = do
   device <- getDevice
   
   let uniformDescriptorWrite = SomeStruct $ zero
@@ -88,4 +150,28 @@ updateDescriptorSet' uniformBuffer descriptorSet = do
 
   updateDescriptorSets device [uniformDescriptorWrite] []
 
+updateObjectDescriptorSet'
+  :: Buffer
+  -> DescriptorSet
+  -> SeangineInstance ()
+updateObjectDescriptorSet' objectBuffer descriptorSet = do
+  device <- getDevice
+  
+  let uniformDescriptorWrite = SomeStruct $ zero
+        { dstSet = descriptorSet,
+          dstBinding = 0,
+          descriptorCount = 1,
+          descriptorType = DESCRIPTOR_TYPE_STORAGE_BUFFER,
+          bufferInfo = [objectDescriptorBufferInfo]
+        }
 
+      objectDescriptorBufferInfo :: DescriptorBufferInfo
+      objectDescriptorBufferInfo = zero
+        { buffer = objectBuffer,
+          offset = 0,
+          range = fromIntegral bufferSize
+        }
+
+      bufferSize = maxObjects * sizeOf (zero :: PushConstantObject)
+
+  updateDescriptorSets device [uniformDescriptorWrite] []

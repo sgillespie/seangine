@@ -77,7 +77,6 @@ withDeviceLocalBuffer bufferSize bufferUsageFlags data' = do
   copyBuffer stagingBuffer buffer bufferSize
 
   return buffer
-
   
 copyBuffer
   :: BufferDetails

@@ -14,6 +14,7 @@ import Control.Monad.Trans.Resource
 import Control.Monad.Trans.Reader (ask)
 import Data.Maybe
 import Data.Word
+import Foreign.Marshal (pokeArray)
 import Foreign.Storable
 import Foreign.Ptr
 import GHC.Clock (getMonotonicTime)
@@ -52,7 +53,8 @@ renderFrame = do
 
   runCmdT ffCommandBuffer zero $ recordCommandBuffer frame (fromIntegral imageIndex)
 
-  updateUniformBuffer imageIndex
+  updateUniformBuffer
+  updateObjectBuffer
 
   let submitInfo = SomeStruct $ zero
         { waitSemaphores = [ffImageAvailable],
@@ -102,10 +104,18 @@ recordCommandBuffer Frame{..} imageIndex = do
       PIPELINE_BIND_POINT_GRAPHICS
       fPipelineLayout
       0
-      ffDescriptorSets
+      [ffDescriptorSets V.! 0]
       []
 
-    V.forM_ (fScene ^. _nodes) $ \node -> do
+    cmdBindDescriptorSets
+      commandBuffer
+      PIPELINE_BIND_POINT_GRAPHICS
+      fPipelineLayout
+      1
+      [ffDescriptorSets V.! 1]
+      []
+
+    V.iforM_ (fScene ^. _nodes) $ \ nodeId node -> do
       forM_ (node ^. _nodeMesh fScene) $ \(meshId, mesh) -> do
         V.iforM_ (mesh ^. _meshPrimitives) $ \id primitive' -> do
           let bufferId = MeshPrimitiveId meshId id
@@ -113,23 +123,20 @@ recordCommandBuffer Frame{..} imageIndex = do
               vertexBuffer = fVertexBuffers Map.! bufferId
               indexBuffer = fIndexBuffers Map.! bufferId
               pushConstantSize = sizeOf (undefined :: PushConstantObject)
-
+          
           cmdBindVertexBuffers commandBuffer 0 [vertexBuffer] [0]
           cmdBindIndexBuffer commandBuffer indexBuffer 0 INDEX_TYPE_UINT16
 
-          withPushConstant node $ \ptr ->
-            cmdPushConstants
-              commandBuffer
-              fPipelineLayout
-              SHADER_STAGE_VERTEX_BIT
-              0
-              (fromIntegral pushConstantSize)
-              (castPtr ptr)
+          cmdDrawIndexed
+            commandBuffer
+            (fromIntegral $ length indices)
+            1
+            0
+            0
+            (fromIntegral nodeId)
 
-          cmdDrawIndexed commandBuffer (fromIntegral $ length indices) 1 0 0 0
-
-updateUniformBuffer :: Word32 -> SeangineFrame ()
-updateUniformBuffer imageIndex = do
+updateUniformBuffer :: SeangineFrame ()
+updateUniformBuffer = do
   allocator <- getAllocator
   Frame{..} <- getFrame
   FrameInFlight{..} <- getFrameInFlight
@@ -163,28 +170,27 @@ updateUniformBuffer imageIndex = do
 
   return ()
 
-withPushConstant
-  :: (Monad m, MonadUnliftIO m)
-  => Node
-  -> (Ptr PushConstantObject -> m a) -> m a
-withPushConstant node action
-  = allocaBytes pushConstantSize $ withPushConstantPtr node action
-  where pushConstantSize = sizeOf (undefined :: PushConstantObject)
+updateObjectBuffer :: SeangineFrame ()
+updateObjectBuffer = do
+  allocator <- getAllocator
+  Frame{..} <- getFrame
+  FrameInFlight{..} <- getFrameInFlight
 
-withPushConstantPtr
-  :: (Monad m, MonadUnliftIO m)
-  => Node
-  -> (Ptr PushConstantObject -> m a)
-  -> Ptr PushConstantObject
-  -> m a
-withPushConstantPtr node action ptr
-  = liftIO (poke ptr pushConstant) >> action ptr
-  where rotation = fromMaybe zero (node ^. _nodeRotation . to toQuaternion)
-        translation = fromMaybe zero (node ^. _nodeTranslation)
-        scale = fromMaybe (V3 1 1 1) $ node ^. _nodeScale
-        transMatrix = mkTransformation rotation translation
-        scaleMatrix = m33_to_m44 $ scaled scale
-        pushConstant = PushConstantObject $ transMatrix !*! scaleMatrix
+  let (_, bufferAlloc) = ffObjectBuffer
+      pushConstants = flip V.map (fScene ^. _nodes) $ \node -> 
+        let rotation = fromMaybe zero (node ^. _nodeRotation . to toQuaternion)
+            translation = fromMaybe zero (node ^. _nodeTranslation)
+            scale = fromMaybe (V3 1 1 1) $ node ^. _nodeScale
+            transMatrix = mkTransformation rotation translation
+            scaleMatrix = m33_to_m44 $ scaled scale
+            pushConstant = PushConstantObject $ transMatrix !*! scaleMatrix
+        in pushConstant
+
+  (unmapMem, data') <- withMappedMemory allocator bufferAlloc allocate
+  liftIO $ pokeArray (castPtr data') (V.toList pushConstants)
+  release unmapMem
+
+  return ()
 
 toQuaternion (Just (V4 w x y z)) = Just $ Quaternion w (V3 x y z)
 toQuaternion _ = Nothing

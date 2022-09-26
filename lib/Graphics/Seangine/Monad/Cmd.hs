@@ -1,5 +1,6 @@
 module Graphics.Seangine.Monad.Cmd (MonadCmd(..), CmdT(..), runCmdT) where
 
+import Graphics.Seangine.Monad.Frame
 import Graphics.Seangine.Monad.Instance
 
 import Control.Monad.IO.Class
@@ -26,7 +27,8 @@ newtype CmdT m a = CmdT { unCmdT :: ReaderT CommandBuffer m a }
                     Monad,
                     MonadIO,
                     MonadResource,
-                    MonadInstance
+                    MonadInstance,
+                    MonadFrame
                    )
 
 instance Monad m => MonadCmd (CmdT m) where

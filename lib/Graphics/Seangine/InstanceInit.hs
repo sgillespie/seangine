@@ -28,6 +28,7 @@ import Vulkan.Core10.Enums.Result (Result(..))
 import Vulkan.Dynamic (DeviceCmds(..), InstanceCmds(..))
 import Vulkan.Extensions.VK_EXT_debug_utils
 import Vulkan.Extensions.VK_EXT_validation_features
+import Vulkan.Extensions.VK_KHR_shader_draw_parameters
 import Vulkan.Extensions.VK_KHR_shader_non_semantic_info
 import Vulkan.Extensions.VK_KHR_surface
 import Vulkan.Extensions.VK_KHR_swapchain
@@ -43,7 +44,9 @@ enabledLayers :: V.Vector B.ByteString
 enabledLayers = ["VK_LAYER_KHRONOS_validation"]
 extraExtensions = ["VK_EXT_debug_utils"]
 deviceExtensions
-  = [KHR_SWAPCHAIN_EXTENSION_NAME]
+  = [ KHR_SWAPCHAIN_EXTENSION_NAME,
+      KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME
+    ]
 
 debugMsgSeverities :: [DebugUtilsMessageSeverityFlagBitsEXT]
 debugMsgSeverities
