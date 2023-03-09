@@ -1,0 +1,5 @@
+loops:
+  check: cabal test
+  build: cabal build
+  test: cabal test test:tests
+  run: cabal run

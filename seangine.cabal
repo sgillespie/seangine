@@ -1,0 +1,161 @@
+cabal-version:   3.0
+name:            seangine
+version:         0.3.0.0
+synopsis:        See README for more info
+description:
+    See [README.md](https://github.com/sgillespie/seangine#seangine) for more details.
+category:        Graphics
+homepage:        https://github.com/sgillespie/seangine
+bug-reports:     https://github.com/sgillespie/seangine
+author:          Sean D Gillespie
+maintainer:      Sean D Gillespie <sean@mistersg.net>
+copyright:       2021
+license:         MIT
+license-file:    LICENSE
+build-type:      Simple
+extra-doc-files: README.md
+tested-with:     GHC == 9.0.2
+data-files:
+    data/cube.gltf
+
+source-repository head
+  type:          git
+  location:      https://github.com/sgillespie/seangine.git
+
+common common-options
+  build-depends:
+      base ^>= 4.15.1.0,
+      relude,
+      unliftio
+  mixins:
+      base hiding (Prelude),
+      relude (Relude as Prelude),
+      relude
+  ghc-options:
+      -Wall
+      -Wcompat
+      -Widentities
+      -Wincomplete-uni-patterns
+      -Wincomplete-record-updates
+      -Wredundant-constraints
+      -Wnoncanonical-monad-instances
+  if impl(ghc >= 8.2)
+    ghc-options:      -fhide-source-paths
+  if impl(ghc >= 8.4)
+    ghc-options:
+        -Wmissing-export-lists
+        -Wpartial-fields
+  if impl(ghc >= 8.8)
+    ghc-options:       -fwrite-ide-info
+                       -hiedir=.hie
+  if impl(ghc >= 8.10)
+    -- Incorrectly flags relude and base; Re-enable during debugging
+    -- ghc-options:       -Wunused-packages
+
+  default-language:   Haskell2010
+  default-extensions:
+      BangPatterns,
+      BinaryLiterals,
+      ConstraintKinds,
+      DataKinds,
+      DefaultSignatures,
+      DeriveDataTypeable,
+      DeriveFoldable,
+      DeriveFunctor,
+      DeriveGeneric,
+      DeriveTraversable,
+      DoAndIfThenElse,
+      EmptyDataDecls,
+      ExistentialQuantification,
+      FlexibleContexts,
+      FlexibleInstances,
+      FunctionalDependencies,
+      GADTs,
+      GeneralizedNewtypeDeriving,
+      InstanceSigs,
+      KindSignatures,
+      LambdaCase,
+      MultiParamTypeClasses,
+      MultiWayIf,
+      NamedFieldPuns,
+      OverloadedStrings,
+      PartialTypeSignatures,
+      PatternGuards,
+      PolyKinds,
+      RankNTypes,
+      RecordWildCards,
+      ScopedTypeVariables,
+      StandaloneDeriving,
+      TupleSections,
+      TypeFamilies,
+      TypeSynonymInstances,
+      ViewPatterns
+                      
+library
+  import:         common-options
+  hs-source-dirs: lib
+  exposed-modules:
+      Graphics.Seangine.App,
+      Graphics.Seangine.Lib
+  build-depends:
+      vulkan,
+      vulkan-utils
+
+executable seangine
+  import:         common-options
+  main-is:        Main.hs
+  hs-source-dirs: app
+  build-depends:
+      seangine,
+      optparse-applicative
+  other-modules:
+      Paths_seangine
+  ghc-options:
+      -threaded
+      -rtsopts
+      -with-rtsopts=-N
+
+test-suite fourmolu
+  import:             common-options
+  type:               exitcode-stdio-1.0
+  main-is:            Fourmolu.hs
+  hs-source-dirs:     scripts
+  build-depends:      process
+  build-tool-depends: fourmolu:fourmolu
+  ghc-options:
+      -threaded
+      -rtsopts
+      -with-rtsopts=-N
+                      
+test-suite hlint
+  import:         common-options
+  type:           exitcode-stdio-1.0
+  main-is:        HLint.hs
+  hs-source-dirs: scripts
+  build-depends:  hlint
+  ghc-options:
+      -threaded
+      -rtsopts
+      -with-rtsopts=-N
+
+test-suite tests
+  import:             common-options
+  type:               exitcode-stdio-1.0
+  hs-source-dirs:     test
+  main-is:            Driver.hs
+  build-tool-depends: tasty-discover:tasty-discover
+  other-modules:
+      Spec,
+      Graphics.Seangine.AppSpec,
+      Graphics.Seangine.LibSpec,
+  build-depends:
+      seangine,
+      hedgehog,
+      hspec,
+      tasty,
+      tasty-hedgehog,
+      tasty-hspec
+  ghc-options:
+      -threaded
+      -rtsopts
+      -with-rtsopts=-N

@@ -1,27 +1,57 @@
+### Haskell
 dist
 dist-*
+newdist
 cabal-dev
 *.o
 *.hi
-*.hie
 *.chi
 *.chs.h
 *.dyn_o
 *.dyn_hi
-.hpc
-.hsenv
-.cabal-sandbox/
-cabal.sandbox.config
 *.prof
 *.aux
 *.hp
 *.eventlog
-.stack-work/
+.direnv
+.virtualenv
+.hsenv
+.hpc
+.cabal-sandbox/
+cabal.sandbox.config
+cabal.config
 cabal.project.local
-cabal.project.local~
-.HTF/
 .ghc.environment.*
-result
+.HTF/
+.hie/
+# Stack
+.stack-work/
+stack.yaml.lock
 
-# We use package.yaml
-seangine.cabal
+### IDE/support
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-v][a-z]
+[._]sw[a-p]
+*~
+tags
+
+# IntellijIDEA
+.idea/
+.ideaHaskellLib/
+*.iml
+
+# Atom
+.haskell-ghc-mod.json
+
+# VS
+.vscode/
+
+# Emacs
+*#
+.dir-locals.el
+TAGS
+
+# other
+.DS_Store
