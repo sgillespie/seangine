@@ -1,9 +1,15 @@
 module Main (main) where
 
 import Graphics.Seangine.App (App (..), runApp)
-import Graphics.Seangine.Lib (projectName)
+import Graphics.Seangine.Errors
+import Graphics.Seangine.Scene (Scene ())
+import Paths_seangine (getDataDir)
 
+import Control.Monad.Trans.Resource
 import Options.Applicative
+import System.FilePath ((</>))
+import Text.GLTF.Loader hiding (ImpossibleError)
+import UnliftIO.Exception
 
 {-# ANN Options ("HLint: ignore Use newtype instead of data" :: String) #-}
 data Options = Options {optVerbose :: !Bool}
@@ -13,9 +19,19 @@ main :: IO ()
 main = execParser options >>= runApp run
 
 run :: App Options ()
-run = do
-  opts <- ask
-  liftIO $ putTextLn ("Executable for " <> projectName <> ": " <> show opts)
+run = runResourceT $ do
+  _ <- ask
+  dataDir <- liftIO getDataDir
+  _ <- loadScene $ dataDir </> "data" </> "cube.gltf"
+
+  pass
+
+loadScene :: MonadUnliftIO io => FilePath -> io Scene
+loadScene path = do
+  result <- fromJsonFile path
+  case result of
+    Left _ -> throwIO ImpossibleError
+    Right scene -> return scene
 
 options :: ParserInfo Options
 options =

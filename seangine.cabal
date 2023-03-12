@@ -25,8 +25,13 @@ source-repository head
 common common-options
   build-depends:
       base ^>= 4.15.1.0,
+      gltf-loader,
+      microlens,
       relude,
-      unliftio
+      resourcet,
+      transformers,
+      unliftio,
+      vector
   mixins:
       base hiding (Prelude),
       relude (Relude as Prelude),
@@ -78,6 +83,7 @@ common common-options
       MultiParamTypeClasses,
       MultiWayIf,
       NamedFieldPuns,
+      OverloadedLists,
       OverloadedStrings,
       PartialTypeSignatures,
       PatternGuards,
@@ -95,9 +101,17 @@ library
   import:         common-options
   hs-source-dirs: lib
   exposed-modules:
+      Graphics.Seangine,
       Graphics.Seangine.App,
-      Graphics.Seangine.Lib
+      Graphics.Seangine.Errors,
+      Graphics.Seangine.Frame,
+      Graphics.Seangine.HasVulkan,
+      Graphics.Seangine.Lib,
+      Graphics.Seangine.Monad.Frame,
+      Graphics.Seangine.Monad.Vulkan,
+      Graphics.Seangine.Scene
   build-depends:
+      VulkanMemoryAllocator,
       vulkan,
       vulkan-utils
 
@@ -107,7 +121,9 @@ executable seangine
   hs-source-dirs: app
   build-depends:
       seangine,
-      optparse-applicative
+      filepath,
+      optparse-applicative,
+      vulkan
   other-modules:
       Paths_seangine
   ghc-options:
