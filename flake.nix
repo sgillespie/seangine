@@ -17,6 +17,16 @@
       flake-utils.lib.eachSystem supportedSystems (system:
       let
         overlays = [
+          (final: prev: {
+            vulkan-extension-layer = prev.vulkan-extension-layer.overrideAttrs
+              (finalAttrs: prevAttrs: {
+                setupHook = final.writeText "setup-hook" ''
+                  addToSearchPath XDG_DATA_DIRS @out@/share
+                  export XDG_DATA_DIRS
+                '';
+              });
+          })
+          
           haskellNix.overlay
           (final: prev: {
             hixProject =
@@ -28,7 +38,9 @@
                 
                 modules = [{
                   packages.seangine.components.library.build-tools =
-                    pkgs.lib.mkForce [pkgs.glslang];
+                    pkgs.lib.mkForce (with pkgs; [
+                      glslang
+                    ]);
                 }];
 
                 shell = {
@@ -39,12 +51,18 @@
                     hlint = { inherit index-state; };
                   };
 
+                  nativeBuildInputs = with pkgs; [
+                    spirv-headers
+                    spirv-tools
+                    vulkan-extension-layer
+                    vulkan-tools
+                    vulkan-tools-lunarg
+                    vulkan-validation-layers
+                  ];
+
                   buildInputs = with pkgs; [
                     feedback.packages.${system}.default
-                    nixpkgs-fmt
-                    renderdoc
                   ];
-                    
                 };
               };
           })

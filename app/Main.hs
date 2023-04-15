@@ -1,8 +1,7 @@
 module Main (main) where
 
+import Graphics.Seangine hiding (getDataDir)
 import Graphics.Seangine.App (App (..), runApp)
-import Graphics.Seangine.Errors
-import Graphics.Seangine.Scene (Scene ())
 import Paths_seangine (getDataDir)
 
 import Control.Monad.Trans.Resource
@@ -22,7 +21,12 @@ run :: App Options ()
 run = runResourceT $ do
   _ <- ask
   dataDir <- liftIO getDataDir
-  _ <- loadScene $ dataDir </> "data" </> "cube.gltf"
+  scene <- loadScene $ dataDir </> "data" </> "cube.gltf"
+  (_, win) <- withWindow sdlWindowSystem "Seangine 0.1.1.0" 800 600
+  windowExts <- getVulkanExtensions win
+  instance' <- withVulkanInstance windowExts
+  (_, surface) <- withWindowSurface instance' win
+  handles <- withVulkanHandles dataDir instance' surface
 
   pass
 

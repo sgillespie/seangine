@@ -25,7 +25,9 @@ source-repository head
 common common-options
   build-depends:
       base ^>= 4.15.1.0,
+      extra,
       gltf-loader,
+      linear,
       microlens,
       relude,
       resourcet,
@@ -70,6 +72,7 @@ common common-options
       DeriveGeneric,
       DeriveTraversable,
       DoAndIfThenElse,
+      DuplicateRecordFields,
       EmptyDataDecls,
       ExistentialQuantification,
       FlexibleContexts,
@@ -106,12 +109,20 @@ library
       Graphics.Seangine.Errors,
       Graphics.Seangine.Frame,
       Graphics.Seangine.HasVulkan,
+      Graphics.Seangine.Instance,
+      Graphics.Seangine.Instance.CommandBuffers,
+      Graphics.Seangine.Instance.PhysicalDeviceDetails,
       Graphics.Seangine.Lib,
+      Graphics.Seangine.Monad,
       Graphics.Seangine.Monad.Frame,
       Graphics.Seangine.Monad.Vulkan,
-      Graphics.Seangine.Scene
+      Graphics.Seangine.Scene,
+      Graphics.Seangine.Shared.Utils,
+      Graphics.Seangine.Window,
+      Graphics.Seangine.Window.SDL
   build-depends:
       VulkanMemoryAllocator,
+      sdl2,
       vulkan,
       vulkan-utils
 
