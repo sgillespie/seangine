@@ -1,12 +1,11 @@
 module Graphics.Seangine.Monad.Frame
-  ( VulkanFrame (..),
+  ( VulkanFrame (),
     allocateVulkan,
     allocateVulkan_,
     runFrame,
   ) where
 
-import Graphics.Seangine.Frame (Frame (..))
-import Graphics.Seangine.HasVulkan (HasFrame (..), HasFrameInFlight (..))
+import Graphics.Seangine.Config.Frame (Frame (..), HasFrame (..), HasFrameInFlight (..))
 import Graphics.Seangine.Monad.Vulkan (Vulkan ())
 
 import Control.Monad.Trans.Resource

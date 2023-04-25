@@ -1,6 +1,8 @@
-module Graphics.Seangine.Frame
+module Graphics.Seangine.Config.Frame
   ( Frame (..),
     FrameInFlight (..),
+    HasFrame (..),
+    HasFrameInFlight (..),
   ) where
 
 import Graphics.Seangine.Scene
@@ -40,3 +42,9 @@ data FrameInFlight = FrameInFlight
     ffCommandBuffer :: CommandBuffer,
     ffGpuWork :: Fence
   }
+
+class HasFrame m where
+  getFrame :: m Frame
+
+class HasFrame m => HasFrameInFlight m where
+  getFrameInFlight :: m FrameInFlight

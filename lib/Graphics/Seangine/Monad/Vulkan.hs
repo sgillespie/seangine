@@ -1,66 +1,51 @@
 module Graphics.Seangine.Monad.Vulkan
   ( VulkanHandles (..),
-    Vulkan (..),
+    Vulkan (),
     askVulkan,
     runVulkan,
   ) where
 
-import Graphics.Seangine.HasVulkan (HasVulkan (..))
+import Graphics.Seangine.Config
+import Graphics.Seangine.Config.VulkanHandles (HasVulkan (..), VulkanHandles (..))
 
 import Control.Monad.Trans.Resource
-import Data.Vector (Vector)
 import UnliftIO (MonadUnliftIO (..))
-import Vulkan.Core10
-import Vulkan.Extensions.VK_KHR_surface (PresentModeKHR, SurfaceCapabilitiesKHR, SurfaceFormatKHR)
-import VulkanMemoryAllocator
 
-newtype Vulkan a = Vulkan {unVulkan :: ReaderT VulkanHandles (ResourceT IO) a}
+newtype Vulkan a = Vulkan {unVulkan :: ReaderT Config (ResourceT IO) a}
   deriving
     ( Functor,
       Applicative,
       Monad,
       MonadFail,
       MonadIO,
-      MonadReader VulkanHandles,
+      MonadReader Config,
       MonadResource
     )
 
-data VulkanHandles = VulkanHandles
-  { vhDataDir :: FilePath,
-    vhInstance :: Instance,
-    vhPhysicalDevice :: PhysicalDevice,
-    vhDevice :: Device,
-    vhAllocator :: Allocator,
-    vhGraphicsQueue :: Queue,
-    vhGraphicsQueueFamily :: Word32,
-    vhPresentQueue :: Queue,
-    vhPresentQueueFamily :: Word32,
-    vhSurfaceCapabilities :: SurfaceCapabilitiesKHR,
-    vhSurfaceFormats :: Vector SurfaceFormatKHR,
-    vhPresentModes :: Vector PresentModeKHR,
-    vhCommandPool :: CommandPool
-  }
+instance HasConfig Vulkan where
+  getVulkanHandles = Vulkan $ asks cfgVulkanHandles
+  getOptions = Vulkan $ asks cfgOptions
 
 instance HasVulkan Vulkan where
-  getDataDir = Vulkan $ asks vhDataDir
-  getInstance = Vulkan $ asks vhInstance
-  getPhysicalDevice = Vulkan $ asks vhPhysicalDevice
-  getDevice = Vulkan $ asks vhDevice
-  getAllocator = Vulkan $ asks vhAllocator
-  getGraphicsQueue = Vulkan $ asks vhGraphicsQueue
-  getGraphicsQueueFamily = Vulkan $ asks vhGraphicsQueueFamily
-  getPresentQueue = Vulkan $ asks vhPresentQueue
-  getPresentQueueFamily = Vulkan $ asks vhPresentQueueFamily
-  getSurfaceCapabilities = Vulkan $ asks vhSurfaceCapabilities
-  getSurfaceFormats = Vulkan $ asks vhSurfaceFormats
-  getPresentModes = Vulkan $ asks vhPresentModes
-  getCommandPool = Vulkan $ asks vhCommandPool
+  getDataDir = vhDataDir <$> getVulkanHandles
+  getInstance = vhInstance <$> getVulkanHandles
+  getPhysicalDevice = vhPhysicalDevice <$> getVulkanHandles
+  getDevice = vhDevice <$> getVulkanHandles
+  getAllocator = vhAllocator <$> getVulkanHandles
+  getGraphicsQueue = vhGraphicsQueue <$> getVulkanHandles
+  getGraphicsQueueFamily = vhGraphicsQueueFamily <$> getVulkanHandles
+  getPresentQueue = vhPresentQueue <$> getVulkanHandles
+  getPresentQueueFamily = vhPresentQueueFamily <$> getVulkanHandles
+  getSurfaceCapabilities = vhSurfaceCapabilities <$> getVulkanHandles
+  getSurfaceFormats = vhSurfaceFormats <$> getVulkanHandles
+  getPresentModes = vhPresentModes <$> getVulkanHandles
+  getCommandPool = vhCommandPool <$> getVulkanHandles
 
 instance MonadUnliftIO Vulkan where
   withRunInIO a = Vulkan $ withRunInIO (\r -> a (r . unVulkan))
 
-askVulkan :: Vulkan VulkanHandles
+askVulkan :: Vulkan Config
 askVulkan = Vulkan ask
 
-runVulkan :: VulkanHandles -> Vulkan a -> ResourceT IO a
+runVulkan :: Config -> Vulkan a -> ResourceT IO a
 runVulkan handles (Vulkan action) = usingReaderT handles action

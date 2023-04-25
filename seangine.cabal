@@ -106,13 +106,13 @@ library
   exposed-modules:
       Graphics.Seangine,
       Graphics.Seangine.App,
+      Graphics.Seangine.Config,
+      Graphics.Seangine.Config.Frame,
+      Graphics.Seangine.Config.VulkanHandles,
       Graphics.Seangine.Errors,
-      Graphics.Seangine.Frame,
-      Graphics.Seangine.HasVulkan,
       Graphics.Seangine.Instance,
       Graphics.Seangine.Instance.CommandBuffers,
       Graphics.Seangine.Instance.PhysicalDeviceDetails,
-      Graphics.Seangine.Lib,
       Graphics.Seangine.Monad,
       Graphics.Seangine.Monad.Frame,
       Graphics.Seangine.Monad.Vulkan,
@@ -122,6 +122,7 @@ library
       Graphics.Seangine.Window.SDL
   build-depends:
       VulkanMemoryAllocator,
+      filepath,
       sdl2,
       vulkan,
       vulkan-utils

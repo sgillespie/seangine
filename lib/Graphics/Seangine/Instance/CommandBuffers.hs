@@ -3,7 +3,7 @@ module Graphics.Seangine.Instance.CommandBuffers
     withCommandBuffer',
   ) where
 
-import Graphics.Seangine.HasVulkan
+import Graphics.Seangine.Config.VulkanHandles
 import Graphics.Seangine.Monad.Vulkan
 
 import Control.Monad.Trans.Resource (MonadResource (..), allocate)
