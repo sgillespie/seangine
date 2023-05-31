@@ -8,11 +8,7 @@
     let
       supportedSystems = [
         "x86_64-linux"
-        "x86_64-darwin"
-        "aarch64-linux"
-        "aarch64-darwin"
       ];
-      index-state = "2022-12-27T00:00:00Z";
     in
       flake-utils.lib.eachSystem supportedSystems (system:
       let
@@ -33,8 +29,6 @@
               final.haskell-nix.hix.project {
                 src = ./.;
                 evalSystem = "x86_64-linux";
-                inherit index-state;
-
                 
                 modules = [{
                   packages.seangine.components.library.build-tools =
@@ -47,8 +41,9 @@
                   withHoogle = true;
                   
                   tools = {
-                    cabal = { inherit index-state; };
-                    hlint = { inherit index-state; };
+                    cabal = { };
+                    haskell-language-server = { };
+                    hlint = { };
                   };
 
                   nativeBuildInputs = with pkgs; [
@@ -61,6 +56,7 @@
                   ];
 
                   buildInputs = with pkgs; [
+                    haskell-language-server
                     feedback.packages.${system}.default
                   ];
                 };

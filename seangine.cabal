@@ -24,7 +24,7 @@ source-repository head
 
 common common-options
   build-depends:
-      base ^>= 4.15.1.0,
+      base,
       extra,
       gltf-loader,
       linear,
@@ -109,7 +109,12 @@ library
       Graphics.Seangine.Config,
       Graphics.Seangine.Config.Frame,
       Graphics.Seangine.Config.VulkanHandles,
+      Graphics.Seangine.GraphicsPipeline,
       Graphics.Seangine.Errors,
+      Graphics.Seangine.Frame,
+      Graphics.Seangine.Frame.DescriptorSets,
+      Graphics.Seangine.Frame.FramesInFlight,
+      Graphics.Seangine.Frame.SwapchainDetails,
       Graphics.Seangine.Instance,
       Graphics.Seangine.Instance.CommandBuffers,
       Graphics.Seangine.Instance.PhysicalDeviceDetails,

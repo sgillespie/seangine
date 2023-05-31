@@ -14,6 +14,7 @@ module Graphics.Seangine
 import Graphics.Seangine.Config
 import Graphics.Seangine.Config.Frame
 import Graphics.Seangine.Config.VulkanHandles
+import Graphics.Seangine.Frame
 import Graphics.Seangine.Errors
 import Graphics.Seangine.Instance
 import Graphics.Seangine.Monad
@@ -41,7 +42,10 @@ runSeangine opts dataDir = runResourceT $ do
           { cfgVulkanHandles = handles,
             cfgOptions = opts
           }
+          
   runVulkan config $ do
+    _ <- withVulkanFrame win surface scene
+    
     pass
 
 loadScene :: MonadUnliftIO io => FilePath -> io Scene
