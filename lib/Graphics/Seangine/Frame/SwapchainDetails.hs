@@ -1,6 +1,7 @@
 module Graphics.Seangine.Frame.SwapchainDetails
   ( SwapchainDetails (..),
     withSwapchainDetails,
+    withImageView',
   ) where
 
 import Graphics.Seangine.Config.VulkanHandles
@@ -90,6 +91,30 @@ withSwapchainDetails window surface = do
         sdSurfaceFormat = format,
         sdDepthFormat = depthFormat
       }
+
+withImageView' :: Image -> Format -> ImageAspectFlags -> Vulkan ImageView
+withImageView' image format flags = do
+  device <- getDevice
+
+  let createInfo =
+        zero
+          { image = image,
+            viewType = IMAGE_VIEW_TYPE_2D,
+            format = format,
+            components = zero,
+            subresourceRange = subresourceRange
+          }
+
+      subresourceRange =
+        zero
+          { aspectMask = flags,
+            baseMipLevel = 0,
+            levelCount = 1,
+            baseArrayLayer = 0,
+            layerCount = 1
+          }
+
+  snd <$> withImageView device createInfo Nothing allocate
 
 chooseSurfaceFormat :: Vector SurfaceFormatKHR -> Vulkan SurfaceFormatKHR
 chooseSurfaceFormat formats = maybe (throwIO NoSurfaceFormatError) pure maybeFormat

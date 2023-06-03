@@ -7,6 +7,7 @@ data SeangineError
   | NoDeviceError
   | NoDepthFormatError
   | NoSurfaceFormatError
+  | NoSwapchainImages
   deriving (Typeable)
 
 instance Exception SeangineError
@@ -16,3 +17,4 @@ instance Show SeangineError where
   show NoDeviceError = "Can't find a suitable device!"
   show NoDepthFormatError = "Can't find a suitable depth format!"
   show NoSurfaceFormatError = "Can't find a surface format!"
+  show NoSwapchainImages = "Can't retrieve swapchain images!"

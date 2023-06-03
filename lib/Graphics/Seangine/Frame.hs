@@ -3,17 +3,21 @@ module Graphics.Seangine.Frame
   ) where
 
 import Graphics.Seangine.Config.Frame
+import Graphics.Seangine.Config.VulkanHandles
+import Graphics.Seangine.Errors
 import Graphics.Seangine.Frame.DescriptorSets
 import Graphics.Seangine.Frame.FramesInFlight
-import Graphics.Seangine.Frame.SwapchainDetails (SwapchainDetails (..), withSwapchainDetails)
+import Graphics.Seangine.Frame.SwapchainDetails
 import Graphics.Seangine.GraphicsPipeline
 import Graphics.Seangine.Monad
 import Graphics.Seangine.Scene
 import Graphics.Seangine.Window
 
 import Control.Monad.Trans.Resource
+import Data.Traversable (for)
 import Data.Vector (Vector)
-import UnliftIO (getMonotonicTime)
+import UnliftIO (getMonotonicTime, throwIO)
+import Vulkan (getSwapchainImagesKHR)
 import Vulkan.Core10
 import Vulkan.Extensions.VK_KHR_surface (SurfaceKHR ())
 
@@ -66,7 +70,15 @@ withVulkanFrame window surface scene = do
       }
 
 withImageViews :: SwapchainDetails -> Vulkan (Vector ImageView)
-withImageViews = undefined
+withImageViews SwapchainDetails {..} = do
+  device <- getDevice
+
+  (res, images) <- getSwapchainImagesKHR device sdSwapchain
+  case res of
+    SUCCESS ->
+      for images $ \image ->
+        withImageView' image sdSurfaceFormat IMAGE_ASPECT_COLOR_BIT
+    _ -> throwIO NoSwapchainImages
 
 withDepthImageView :: SwapchainDetails -> Vulkan ImageView
 withDepthImageView = undefined
