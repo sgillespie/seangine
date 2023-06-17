@@ -10,24 +10,65 @@
         "aarch64-linux"
         "aarch64-darwin"
       ];
+
     in
       flake-utils.lib.eachSystem supportedSystems (system:
       let
-        overlays = [ haskellNix.overlay
-          (final: prev: {
+        haskellProject = (final: prev: {
             hixProject =
               final.haskell-nix.hix.project {
                 src = ./.;
                 evalSystem = "x86_64-linux";
               };
-          })
+          });
+
+        checks = (final: prev: {
+          fourmolu = final.haskell-nix.tool
+            final.hixProject.args.compiler-nix-name
+            "fourmolu"
+            { version = "latest"; };
+
+          hlintCheck = prev.runCommand "hlint-check" { buildInputs = [final.hlint]; } ''
+            cd "${final.hixProject.args.src}"
+
+            hlint app src test
+            if [[ "$?" -eq 0 ]]; then
+              touch $out
+            fi
+          '';
+
+          fourmoluCheck =
+            prev.runCommand
+              "fourmolu-check"
+              {
+                buildInputs = [ final.fourmolu ];
+              }
+              ''
+                cd "${final.hixProject.args.src}"
+
+                fourmolu --mode check app src test
+                if [[ "$?" -eq 0 ]]; then
+                  touch $out
+                fi
+              '';
+        });
+
+        overlays = [
+          haskellNix.overlay
+          haskellProject
+          checks
         ];
+
         pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
         flake = pkgs.hixProject.flake {};
       in flake // {
+        checks = {
+          inherit (pkgs) hlintCheck fourmoluCheck;
+        };
         legacyPackages = pkgs;
         packages = flake.packages // {
           default = flake.packages."seangine:exe:seangine";
+          inherit (pkgs) hlintCheck fourmoluCheck;
         };
       });
 

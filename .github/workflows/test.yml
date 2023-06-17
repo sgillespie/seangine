@@ -18,3 +18,4 @@ jobs:
         name: sgillespie
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     - run: nix build
+    - run: nix build .#hlintCheck .#fourmoluCheck
