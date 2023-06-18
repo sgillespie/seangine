@@ -11,27 +11,46 @@ category:           Graphics
 build-type:         Simple
 extra-doc-files:    CHANGELOG.md
 
-common warnings
-    ghc-options: -Wall
+common common-options
+    ghc-options:
+        -Wall
+        -Wcompat
+        -Widentities
+        -Wincomplete-uni-patterns
+        -Wredundant-constraints
+        -Wnoncanonical-monad-instances
+        -fhide-source-paths
+        -Wmissing-export-lists
+        -Wpartial-fields
+        -fwrite-ide-info
+        -hiedir=.hie
+    mixins:
+        base hiding (Prelude),
+        relude (Relude as Prelude),
+        relude
+    build-depends:
+        base ^>= 4.16.0.0,
+        relude
 
 library
-    import:           warnings
-    exposed-modules:  MyLib
+    import:           common-options
+    exposed-modules:
+        Graphics.Seangine
     build-depends:    base ^>=4.16.0.0
     hs-source-dirs:   src
     default-language: GHC2021
 
 executable seangine
-    import:           warnings
+    import:           common-options
     main-is:          Main.hs
     build-depends:
-        base ^>=4.16.0.0,
+        optparse-applicative,
         seangine
     hs-source-dirs:   app
     default-language: GHC2021
 
 test-suite seangine-test
-    import:           warnings
+    import:           common-options
     default-language: GHC2021
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
