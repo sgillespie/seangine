@@ -1,7 +1,4 @@
-module Graphics.Seangine
-  ( SeangineOptions (..),
-    runSeangine,
-  ) where
+module Graphics.Seangine.Types (SeangineOptions (..)) where
 
 data SeangineOptions = SeangineOptions
   { optFile :: !FilePath,
@@ -9,6 +6,3 @@ data SeangineOptions = SeangineOptions
     optDebug :: !Bool
   }
   deriving (Eq)
-
-runSeangine :: SeangineOptions -> IO ()
-runSeangine _ = pass

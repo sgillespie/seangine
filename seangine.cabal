@@ -43,6 +43,7 @@ library
 executable seangine
     import:           common-options
     main-is:          Main.hs
+    other-modules:    Paths_seangine
     build-depends:
         optparse-applicative,
         seangine
