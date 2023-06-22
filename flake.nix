@@ -2,7 +2,8 @@
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  outputs = { self, nixpkgs, flake-utils, haskellNix }:
+  inputs.feedback.url = "github:NorfairKing/feedback";
+  outputs = { self, nixpkgs, flake-utils, haskellNix, feedback }:
     let
       supportedSystems = [
         "x86_64-linux"
@@ -21,6 +22,8 @@
                 evalSystem = "x86_64-linux";
               };
           });
+
+        feedbackOverlay = (final: prev: { feedback = feedback.packages.${system}.default; });
 
         checks = (final: prev: {
           fourmolu = final.haskell-nix.tool
@@ -57,6 +60,7 @@
           haskellNix.overlay
           haskellProject
           checks
+          feedbackOverlay
         ];
 
         pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };

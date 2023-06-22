@@ -6,10 +6,14 @@
     p.mingwW64
   ]);
 
-  shell.tools = {
-    cabal = "latest";
-    fourmolu = "latest";
-    hlint = "latest";
-    haskell-language-server = "latest";
+  shell = {
+    tools = {
+      cabal = "latest";
+      fourmolu = "latest";
+      hlint = "latest";
+      haskell-language-server = "latest";
+    };
+
+    buildInputs = [pkgs.feedback];
   };
 }
