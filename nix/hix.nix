@@ -7,6 +7,9 @@
   ]);
 
   shell = {
+    # Speed up local builds a bit
+    crossPlatforms = _: [];
+
     tools = {
       cabal = "latest";
       fourmolu = "latest";

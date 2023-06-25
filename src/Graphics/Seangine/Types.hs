@@ -1,8 +1,7 @@
-module Graphics.Seangine.Types (SeangineOptions (..)) where
+module Graphics.Seangine.Types
+  ( module Graphics.Seangine.Types.Config,
+    module Graphics.Seangine.Types.R,
+  ) where
 
-data SeangineOptions = SeangineOptions
-  { optFile :: !FilePath,
-    optDevice :: !(Maybe String),
-    optDebug :: !Bool
-  }
-  deriving (Eq)
+import Graphics.Seangine.Types.Config
+import Graphics.Seangine.Types.R

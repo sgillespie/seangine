@@ -31,12 +31,24 @@ common common-options
     build-depends:
         base ^>= 4.16.0.0,
         relude
+    default-extensions:
+        DerivingStrategies
+        RecordWildCards
+    default-language: GHC2021
 
 library
     import:           common-options
     exposed-modules:
-        Graphics.Seangine
-    build-depends:    base ^>=4.16.0.0
+        Graphics.Seangine,
+        Graphics.Seangine.Types,
+        Graphics.Seangine.Types.Config,
+        Graphics.Seangine.Types.R
+    build-depends:
+      VulkanMemoryAllocator,
+      resourcet,
+      unliftio-core,
+      vector,
+      vulkan
     hs-source-dirs:   src
     default-language: GHC2021
 
@@ -57,5 +69,4 @@ test-suite seangine-test
     hs-source-dirs:   test
     main-is:          Main.hs
     build-depends:
-        base ^>=4.16.0.0,
         seangine
