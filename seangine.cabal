@@ -30,10 +30,13 @@ common common-options
         relude
     build-depends:
         base ^>= 4.16.0.0,
-        relude
+        relude,
+        linear
     default-extensions:
-        DerivingStrategies
-        RecordWildCards
+        DerivingStrategies,
+        OverloadedStrings,
+        RecordWildCards,
+        TypeFamilies
     default-language: GHC2021
 
 library
@@ -42,10 +45,16 @@ library
         Graphics.Seangine,
         Graphics.Seangine.Types,
         Graphics.Seangine.Types.Config,
-        Graphics.Seangine.Types.R
+        Graphics.Seangine.Types.R,
+        Graphics.Seangine.Window,
+        Graphics.Seangine.Window.Sdl,
+        Graphics.Seangine.Window.Glfw,
+        Graphics.Seangine.Window.Types
     build-depends:
+      GLFW-b,
       VulkanMemoryAllocator,
       resourcet,
+      sdl2,
       unliftio-core,
       vector,
       vulkan
