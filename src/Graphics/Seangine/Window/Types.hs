@@ -16,7 +16,7 @@ data Event
   | UnknownEvent
   deriving (Enum, Bounded, Eq, Show)
 
-type family Window w
+data family Window window
 
 class WindowSystem system where
   initWindowSystem :: MonadIO io => Proxy system -> io system
@@ -32,27 +32,23 @@ class WindowSystem system where
 
   destroyWindow
     :: MonadIO io
-    => system
-    -> Window system
+    => Window system
     -> io ()
 
   getWindowSurface
     :: MonadIO io
-    => system
-    -> Window system
+    => Window system
     -> Instance
     -> io SurfaceKHR
 
   getDrawableSize
     :: MonadIO io
-    => system
-    -> Window system
+    => Window system
     -> io (V2 Int)
 
   getWindowExtensions
     :: MonadIO io
-    => system
-    -> Window system
+    => Window system
     -> io (Vector ByteString)
 
   pollWindowEvents :: MonadIO io => system -> io [Event]

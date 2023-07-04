@@ -1,27 +1,27 @@
 module Graphics.Seangine.Window
-  ( GlfwWindow,
-    SdlWindow,
+  ( GlfwWindowSystem,
+    SdlWindowSystem,
     WindowSystem (..),
-    glfw,
-    sdl,
+    withGlfw,
+    withSdl,
     withWindowSystem,
     withWindow,
     withWindowSurface,
   ) where
 
-import Graphics.Seangine.Window.Glfw (GlfwWindow)
-import Graphics.Seangine.Window.Sdl (SdlWindow)
+import Graphics.Seangine.Window.Glfw (GlfwWindowSystem)
+import Graphics.Seangine.Window.Sdl (SdlWindowSystem)
 import Graphics.Seangine.Window.Types (Window, WindowSystem (..))
 
 import Control.Monad.Trans.Resource
 import Vulkan.Core10 (Instance ())
 import Vulkan.Extensions.VK_KHR_surface (SurfaceKHR (..), destroySurfaceKHR)
 
-sdl :: Proxy SdlWindow
-sdl = Proxy
+withGlfw :: (MonadResource m) => m (ReleaseKey, GlfwWindowSystem)
+withGlfw = withWindowSystem (Proxy :: Proxy GlfwWindowSystem)
 
-glfw :: Proxy GlfwWindow
-glfw = Proxy
+withSdl :: (MonadResource m) => m (ReleaseKey, SdlWindowSystem)
+withSdl = withWindowSystem (Proxy :: Proxy SdlWindowSystem)
 
 withWindowSystem
   :: (MonadResource m, WindowSystem window)
@@ -38,17 +38,16 @@ withWindow
   -> m (ReleaseKey, Window window)
 withWindow win title width height = do
   let create = createWindow win title width height
-      destroy = destroyWindow win
+      destroy = destroyWindow
 
   allocate create destroy
 
 withWindowSurface
   :: (MonadResource m, WindowSystem window)
-  => window
-  -> Window window
+  => Window window
   -> Instance
   -> m (ReleaseKey, SurfaceKHR)
-withWindowSurface win handle inst = allocate create destroy
+withWindowSurface win inst = allocate create destroy
   where
-    create = getWindowSurface win handle inst
+    create = getWindowSurface win inst
     destroy = flip (destroySurfaceKHR inst) Nothing

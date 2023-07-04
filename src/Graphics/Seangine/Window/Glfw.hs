@@ -1,5 +1,5 @@
 module Graphics.Seangine.Window.Glfw
-  ( GlfwWindow (),
+  ( GlfwWindowSystem (),
   ) where
 
 import Graphics.Seangine.Window.Types (Event (..), Window (), WindowSystem (..))
@@ -10,36 +10,36 @@ import Linear (V2)
 import Vulkan.Core10 (Instance)
 import Vulkan.Extensions.VK_KHR_surface
 
-data GlfwWindow = GlfwWindow
+data GlfwWindowSystem = GlfwWindowSystem
 
-type instance Window GlfwWindow = GLFW.Window
+newtype instance Window GlfwWindowSystem = GlfwWindow {unWindow :: GLFW.Window}
 
-instance WindowSystem GlfwWindow where
+instance WindowSystem GlfwWindowSystem where
   initWindowSystem _ = initGlfw
   destroyWindowSystem _ = pass
   createWindow _ = createGlfwWindow
-  destroyWindow _ = destroyGlfwWindow
-  getWindowSurface _ = getGlfwWindowSurface
-  getDrawableSize _ = getGlfwDrawableSize
-  getWindowExtensions _ = getGlfwWindowExtensions
+  destroyWindow = destroyGlfwWindow
+  getWindowSurface = getGlfwWindowSurface
+  getDrawableSize = getGlfwDrawableSize
+  getWindowExtensions = getGlfwWindowExtensions
   pollWindowEvents _ = pollGlfwWindowEvents
 
-initGlfw :: MonadIO io => io GlfwWindow
-initGlfw = pure GlfwWindow
+initGlfw :: MonadIO io => io GlfwWindowSystem
+initGlfw = pure GlfwWindowSystem
 
-createGlfwWindow :: MonadIO io => Text -> Int -> Int -> io GLFW.Window
+createGlfwWindow :: MonadIO io => Text -> Int -> Int -> io (Window GlfwWindowSystem)
 createGlfwWindow _ _ _ = undefined
 
-destroyGlfwWindow :: MonadIO io => GLFW.Window -> io ()
+destroyGlfwWindow :: MonadIO io => Window GlfwWindowSystem -> io ()
 destroyGlfwWindow = undefined
 
-getGlfwWindowSurface :: MonadIO io => GLFW.Window -> Instance -> io SurfaceKHR
+getGlfwWindowSurface :: MonadIO io => Window GlfwWindowSystem -> Instance -> io SurfaceKHR
 getGlfwWindowSurface _ _ = undefined
 
-getGlfwDrawableSize :: MonadIO io => GLFW.Window -> io (V2 Int)
+getGlfwDrawableSize :: MonadIO io => Window GlfwWindowSystem -> io (V2 Int)
 getGlfwDrawableSize _ = undefined
 
-getGlfwWindowExtensions :: MonadIO io => GLFW.Window -> io (Vector ByteString)
+getGlfwWindowExtensions :: MonadIO io => Window GlfwWindowSystem -> io (Vector ByteString)
 getGlfwWindowExtensions _ = undefined
 
 pollGlfwWindowEvents :: MonadIO io => io [Event]

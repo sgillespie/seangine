@@ -1,5 +1,5 @@
 module Graphics.Seangine.Window.Sdl
-  ( SdlWindow (),
+  ( SdlWindowSystem (),
   ) where
 
 import Graphics.Seangine.Window.Types (Event (..), Window (), WindowSystem (..))
@@ -15,27 +15,27 @@ import Vulkan.Core10 (Instance)
 import Vulkan.Core10.Handles (instanceHandle)
 import Vulkan.Extensions.VK_KHR_surface
 
-data SdlWindow = SdlWindow
+data SdlWindowSystem = SdlWindowSystem
 
-type instance Window SdlWindow = SDL.Window
+newtype instance Window SdlWindowSystem = SdlWindow {unWindow :: SDL.Window}
 
-instance WindowSystem SdlWindow where
+instance WindowSystem SdlWindowSystem where
   initWindowSystem _ = initSdl
   destroyWindowSystem _ = SDL.quit
   createWindow _ = createSdlWindow
-  destroyWindow _ = SDL.destroyWindow
-  getWindowSurface _ = getSdlWindowSurface
-  getDrawableSize _ = getSdlDrawableSize
-  getWindowExtensions _ = getSdlWindowExtensions
+  destroyWindow = SDL.destroyWindow . unWindow
+  getWindowSurface = getSdlWindowSurface
+  getDrawableSize = getSdlDrawableSize
+  getWindowExtensions = getSdlWindowExtensions
   pollWindowEvents _ = pollSdlWindowEvents
 
-initSdl :: MonadIO io => io SdlWindow
-initSdl = SDL.initialize initFlags $> SdlWindow
+initSdl :: MonadIO io => io SdlWindowSystem
+initSdl = SDL.initialize initFlags $> SdlWindowSystem
   where
     initFlags = [SDL.InitVideo, SDL.InitEvents]
 
-createSdlWindow :: MonadIO io => Text -> Int -> Int -> io SDL.Window
-createSdlWindow title width height = SDL.createWindow title window
+createSdlWindow :: MonadIO io => Text -> Int -> Int -> io (Window SdlWindowSystem)
+createSdlWindow title width height = SdlWindow <$> SDL.createWindow title window
   where
     window =
       SDL.defaultWindow
@@ -43,18 +43,18 @@ createSdlWindow title width height = SDL.createWindow title window
           SDL.windowGraphicsContext = SDL.VulkanContext
         }
 
-getSdlWindowSurface :: MonadIO io => SDL.Window -> Instance -> io SurfaceKHR
-getSdlWindowSurface window inst =
+getSdlWindowSurface :: MonadIO io => Window SdlWindowSystem -> Instance -> io SurfaceKHR
+getSdlWindowSurface (SdlWindow window) inst =
   SurfaceKHR
     <$> SDL.vkCreateSurface window (castPtr $ instanceHandle inst)
 
-getSdlDrawableSize :: MonadIO io => SDL.Window -> io (V2 Int)
-getSdlDrawableSize window = do
+getSdlDrawableSize :: MonadIO io => Window SdlWindowSystem -> io (V2 Int)
+getSdlDrawableSize (SdlWindow window) = do
   (V2 width height) <- SDL.vkGetDrawableSize window
   pure $ V2 (fromIntegral width) (fromIntegral height)
 
-getSdlWindowExtensions :: MonadIO io => SDL.Window -> io (Vector ByteString)
-getSdlWindowExtensions window =
+getSdlWindowExtensions :: MonadIO io => Window SdlWindowSystem -> io (Vector ByteString)
+getSdlWindowExtensions (SdlWindow window) =
   SDL.vkGetInstanceExtensions window
     >>= liftIO . mapM packCString . Vector.fromList
 
