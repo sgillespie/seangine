@@ -27,7 +27,7 @@ instance WindowSystem SdlWindowSystem where
   getWindowSurface = getSdlWindowSurface
   getDrawableSize = getSdlDrawableSize
   getWindowExtensions = getSdlWindowExtensions
-  pollWindowEvents _ = pollSdlWindowEvents
+  pollWindowEvents _ _ = pollSdlWindowEvents
 
 initSdl :: MonadIO io => io SdlWindowSystem
 initSdl = SDL.initialize initFlags $> SdlWindowSystem

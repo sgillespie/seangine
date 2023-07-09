@@ -45,6 +45,7 @@ library
         Graphics.Seangine,
         Graphics.Seangine.Types,
         Graphics.Seangine.Types.Config,
+        Graphics.Seangine.Types.Errors,
         Graphics.Seangine.Types.R,
         Graphics.Seangine.Window,
         Graphics.Seangine.Window.Sdl,
@@ -58,6 +59,8 @@ library
       unliftio-core,
       vector,
       vulkan
+    extra-libraries:
+      glfw
     hs-source-dirs:   src
     default-language: GHC2021
 

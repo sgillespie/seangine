@@ -51,4 +51,4 @@ class WindowSystem system where
     => Window system
     -> io (Vector ByteString)
 
-  pollWindowEvents :: MonadIO io => system -> io [Event]
+  pollWindowEvents :: MonadIO io => system -> Window system -> io [Event]
